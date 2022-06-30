@@ -32,8 +32,8 @@ local record gb
     end
 
     record Location
-        location_start: integer
-        location_end: integer
+        location_start: number -- integer
+        location_end: number -- integer
         complement: boolean
         join: boolean
         five_prime_partial: boolean
@@ -266,24 +266,71 @@ function gb.parse(input: string): {gb.Genbank}
         return source, organism, taxonomy
     end
 
-    --function parse_location(s: string): gb.Location
-    --    local location: gb.Location = {}
-    --    if not s:find("(") then
-    --        if not s:find(".") then
-    --            position = tonumber(s)
-    --            location.location_start = position
-    --            location.location_end = position
-    --        else
-    --            -- to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
-    --            local start_end_split = split(s, "[^%.]+")
-    --            location.location_start = start_end_split[1]
-    --            location.location_end = start_end_split[2]
-    --        end
-    --    else
-    --        local first_outer_parentheses = s:find("%(")
+    function parse_location(s: string): gb.Location
+        local location: gb.Location = {}
+		location.sub_locations = {}
+        if not s:find("%(") then
+            if not s:find("%.") then
+                local position = tonumber(s)
+                location.location_start = position
+                location.location_end = position
+            else
+                -- to remove FivePrimePartial and ThreePrimePartial indicators from start and end before converting to int.
+                local start_end_split = split(s, "[^%.]+")
+                location.location_start = tonumber(start_end_split[1])
+                location.location_end = tonumber(start_end_split[2])
+            end
+        else
+            local first_outer_parentheses = s:find("%(")
+			local last_outer_parentheses = s:find("%)")
+	    	local expression = s:sub(first_outer_parentheses+1, last_outer_parentheses-1)
+	    	local command = s:sub(1, first_outer_parentheses-1)
+	    	if command == "join" then
+			    location.join = true
+			    -- This case checks for join(complement(x..x),complement(x..x)), or any more complicated derivatives
+			    if expression:find("%(") then
+				    local first_inner_parentheses = expression:find("%(")
+				    local parentheses_count = 1
+				    local comma = 0
+				    local i = 2
+				    while(parentheses_count > 0) do
+					    comma = i
+					    if expression:sub(first_inner_parentheses + i) == "(" then parentheses_count = parentheses_count + 1 end
+					    if expression:sub(first_inner_parentheses + i) == ")" then parentheses_count = parentheses_count - 1 end
+					    i = i + 1
+				    end
+				    local parse_left_location = parse_location(expression:sub(1, first_inner_parentheses+comma+1))
+				    local parse_right_location = parse_location(expression:sub(2+first_inner_parentheses+comma, -1))
+				    location.sub_locations[#location.sub_locations+1] = parse_left_location
+				    location.sub_locations[#location.sub_locations+1] = parse_right_location
+			    else -- This is the default join(x..x,x..x)
+					for _, number_range in ipairs(split(expression, "[^,]+")) do
+						local join_location = parse_location(number_range)
+						location.sub_locations[#location.sub_locations+1] = join_location
+					end
+			    end
+	    	end
 
-    --    end
-    --end
+			if command == "complement" then
+				local sub_location = parse_location(expression)
+				sub_location.complement = true
+				location.sub_locations[#location.sub_locations+1] = sub_location
+        	end
+		end
+
+		if s:find("%<") then
+			location.five_prime_partial = true
+		end
+		if s:find("%>") then
+			location.three_prime_partial = true
+		end
+
+		-- if excess root node then trim node. Maybe should just be handled with second arg?
+		if location.location_start == 0 and location.location_end and not location.join and not location.complement then
+			location = location.sub_locations[1]
+		end
+		return location
+    end
 
     local record ParseParameters
         new_location: boolean
@@ -415,7 +462,7 @@ function gb.parse(input: string): {gb.Genbank}
 
                 -- add our features to genbank
                 for _, feature in ipairs(params.features) do
-                    -- location = parse_location TODO
+					feature.location = parse_location(feature.gbk_location_string) 
                     params.genbank.features[#params.genbank.features+1] = feature
                 end
                 goto continue
