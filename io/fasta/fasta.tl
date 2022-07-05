@@ -1,26 +1,26 @@
 local record fasta
     record Fasta
-        name: string
+        identifier: string
         sequence: string
     end
 end
 
 function fasta.parse(input: string): {fasta.Fasta}
     local output: {fasta.Fasta} = {}
-    local name: string = ""
+    local identifier: string = ""
     local sequence: string = ""
     local start:boolean = true
     for line in string.gmatch(input, '[^\r\n]+') do
         local s: string = line:sub(1,1)
-        -- Process name lines
+        -- Process identifier lines
         if s == ">" then
             -- Process first line
             if start then
-                name = line:sub(2,-1)
+                identifier = line:sub(2,-1)
                 start = false
             else
-                output[#output+1] = {name = name, sequence = sequence}
-                name = ""
+                output[#output+1] = {identifier = identifier, sequence = sequence}
+                identifier = ""
                 sequence = ""
             end
         -- Process sequence lines
@@ -29,7 +29,7 @@ function fasta.parse(input: string): {fasta.Fasta}
         end
     end
     -- final output
-    output[#output+1] = {name = name, sequence = sequence}
+    output[#output+1] = {identifier = identifier, sequence = sequence}
     return output
 end
 

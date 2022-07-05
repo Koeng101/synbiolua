@@ -10,7 +10,7 @@ fasta.lua
 
     2 function fasta.parse(input)
     1    local output = {}
-    1    local name = ""
+    1    local identifier = ""
     1    local sequence = ""
     1    local start = true
     6    for line in string.gmatch(input, '[^\r\n]+') do
@@ -19,11 +19,11 @@ fasta.lua
     5       if s == ">" then
 
     2          if start then
-    1             name = line:sub(2, -1)
+    1             identifier = line:sub(2, -1)
     1             start = false
                else
-    1             output[#output + 1] = { name = name, sequence = sequence }
-    1             name = ""
+    1             output[#output + 1] = { identifier = identifier, sequence = sequence }
+    1             identifier = ""
     1             sequence = ""
                end
 
@@ -32,7 +32,7 @@ fasta.lua
             end
          end
 
-    1    output[#output + 1] = { name = name, sequence = sequence }
+    1    output[#output + 1] = { identifier = identifier, sequence = sequence }
     1    return output
       end
 
@@ -54,13 +54,94 @@ fasta_test.lua
     1 function test_fasta()
     1    local fastas = fasta.parse(test_case)
     1    assert(#fastas, 2)
-    1    assert(fastas[1].name, "hello there")
+    1    assert(fastas[1].identifier, "hello there")
     1    assert(fastas[1].sequence, "atg")
-    1    assert(fastas[2].name, "general kenobi")
+    1    assert(fastas[2].identifier, "general kenobi")
     1    assert(fastas[2].sequence, "taa")
       end
 
     1 test_fasta()
+
+==============================================================================
+fastq.lua
+==============================================================================
+    2 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local string = _tl_compat and _tl_compat.string or string; local fastq = {Fastq = {}, }
+
+
+
+
+
+
+
+    2 function fastq.parse(input)
+    1    local output = {}
+    1    local identifier = ""
+    1    local sequence = ""
+    1    local quality = ""
+    1    local quality_next = false
+    1    local start = true
+    9    for line in string.gmatch(input, '[^\r\n]+') do
+    8       local s = line:sub(1, 1)
+
+    8       if s == "@" then
+
+    2          if start then
+    1             identifier = line:sub(2, -1)
+    1             start = false
+               else
+    1             output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
+    1             identifier = ""
+    1             sequence = ""
+    1             quality = ""
+               end
+
+    6       elseif s ~= "@" then
+    6          if quality_next == true then
+    2             quality = line
+    2             quality_next = false
+               else
+    4             if s == "+" then
+    2                quality_next = true
+                  else
+    2                sequence = sequence .. line:gsub("%s+", "")
+                  end
+               end
+            end
+         end
+
+    1    output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
+    1    return output
+      end
+
+    2 return fastq
+
+==============================================================================
+fastq_test.lua
+==============================================================================
+    1 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local assert = _tl_compat and _tl_compat.assert or assert; local fastq = require("fastq")
+
+      local test_case = [[@SEQ_ID
+      GATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT
+      +
+      !''*((((***+))%%%++)(%%%%).1***-+*''))**55CCF>>>>>>CCCCCCC65
+      @SEQ_ID_2
+      AATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT
+      +
+      !1'*((((***+))%%%++)(%%%%).1***-+*''))**55CCF>>>>>>CCCCCCC65
+    1 ]]
+
+    1 function test_fastq()
+    1    local fastqs = fastq.parse(test_case)
+    1    assert(#fastqs, 2)
+    1    assert(fastqs[1].identifier, "SEQ_ID")
+    1    assert(fastqs[1].sequence, "GATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT")
+    1    assert(fastqs[1].quality, "!''*((((***+))%%%++)(%%%%).1***-+*''))**55CCF>>>>>>CCCCCCC65")
+    1    assert(fastqs[2].identifier, "SEQ_ID_2")
+    1    assert(fastqs[2].sequence, "AATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT")
+    1    assert(fastqs[2].quality, "!1'*((((***+))%%%++)(%%%%).1***-+*''))**55CCF>>>>>>CCCCCCC65")
+      end
+
+    1 test_fastq()
 
 ==============================================================================
 genbank.lua
@@ -795,7 +876,9 @@ File             Hits Missed Coverage
 -------------------------------------
 fasta.lua        20   0      100.00%
 fasta_test.lua   10   0      100.00%
+fastq.lua        28   0      100.00%
+fastq_test.lua   12   0      100.00%
 genbank.lua      252  58     81.29%
 genbank_test.lua 7    9      43.75%
 -------------------------------------
-Total            289  67     81.18%
+Total            329  67     83.08%
