@@ -142,8 +142,8 @@ ORIGIN
      2641 gttcgtgcac acagcccagc ttggagcgaa cgacctacac cgaact 
 //]]
 
--- Print contents of `tbl`, with indentation.
--- `indent` sets the initial level of indentation.
+-- tprint can be used for printing out genbank files that are being finicky
+-- to test.
 function tprint (tbl: any, indent:integer)
   if not indent then indent = 0 end
   for k, v in pairs(tbl as {any:any}) do
@@ -161,7 +161,7 @@ end
 
 function test_genbank()
     local plasmids = gb.parse(puc19)
-    tprint(plasmids[1])
+    assert(plasmids[1].meta.locus.name == "puc19.gbk")
 end
 
 test_genbank()

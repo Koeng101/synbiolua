@@ -1,0 +1,801 @@
+==============================================================================
+fasta.lua
+==============================================================================
+    2 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local string = _tl_compat and _tl_compat.string or string; local fasta = {Fasta = {}, }
+
+
+
+
+
+
+    2 function fasta.parse(input)
+    1    local output = {}
+    1    local name = ""
+    1    local sequence = ""
+    1    local start = true
+    6    for line in string.gmatch(input, '[^\r\n]+') do
+    5       local s = line:sub(1, 1)
+
+    5       if s == ">" then
+
+    2          if start then
+    1             name = line:sub(2, -1)
+    1             start = false
+               else
+    1             output[#output + 1] = { name = name, sequence = sequence }
+    1             name = ""
+    1             sequence = ""
+               end
+
+    3       elseif s ~= ">" and s ~= ";" then
+    2          sequence = sequence .. line:gsub("%s+", "")
+            end
+         end
+
+    1    output[#output + 1] = { name = name, sequence = sequence }
+    1    return output
+      end
+
+    2 return fasta
+
+==============================================================================
+fasta_test.lua
+==============================================================================
+    1 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local assert = _tl_compat and _tl_compat.assert or assert; local fasta = require("fasta")
+
+      local test_case = [[>hello there
+      atg
+      ;a comment
+
+      >general kenobi
+      taa
+    1 ]]
+
+    1 function test_fasta()
+    1    local fastas = fasta.parse(test_case)
+    1    assert(#fastas, 2)
+    1    assert(fastas[1].name, "hello there")
+    1    assert(fastas[1].sequence, "atg")
+    1    assert(fastas[2].name, "general kenobi")
+    1    assert(fastas[2].sequence, "taa")
+      end
+
+    1 test_fasta()
+
+==============================================================================
+genbank.lua
+==============================================================================
+    2 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local gb = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    2 local genbank_molecule_types = {
+    2    "DNA",
+    2    "genomic DNA",
+    2    "genomic RNA",
+    2    "mRNA",
+    2    "tRNA",
+    2    "rRNA",
+    2    "other RNA",
+    2    "other DNA",
+    2    "transcribed RNA",
+    2    "viral cRNA",
+    2    "unassigned DNA",
+         "unassigned RNA",
+    2 }
+
+
+    2 local genbank_divisions = {
+    2    "PRI",
+    2    "ROD",
+    2    "MAM",
+    2    "VRT",
+    2    "INV",
+    2    "PLN",
+    2    "BCT",
+    2    "VRL",
+    2    "PHG",
+    2    "SYN",
+    2    "UNA",
+    2    "EST",
+    2    "PAT",
+    2    "STS",
+    2    "GSS",
+    2    "HTG",
+    2    "HTC",
+         "ENV",
+    2 }
+
+
+    2 function gb.parse(input)
+
+    1    function trim(s)
+  357       return (s:gsub("^%s*(.-)%s*$", "%1"))
+         end
+
+    1    function split(s, sep)
+  224       if sep == nil then
+  150          sep = "[^%s]+"
+            end
+  224       local l = {}
+ 1038       for token in s:gmatch(sep) do
+  814          l[#l + 1] = token
+            end
+  224       return l
+         end
+
+    1    function deepcopy(obj)
+  790       if type(obj) ~= 'table' then return obj end
+  147       local obj_table = obj
+  147       local res = setmetatable({}, getmetatable(obj))
+  531       for k, v in pairs(obj_table) do res[deepcopy(k)] = deepcopy(v) end
+  147       return res
+         end
+
+    1    function count_leading_spaces(line)
+  146       local i = 0
+ 2556       for idx = 1, #line do
+ 2556          if line:sub(idx, idx) == " " then
+ 2410             i = i + 1
+               else
+  146             return i
+               end
+            end
+         end
+
+    1    function parse_locus(locus_string)
+    1       local locus = gb.Locus
+
+    1       local locus_split = split(trim(locus_string))
+    1       local filtered_locus_split = {}
+    8       for i, _ in ipairs(locus_split) do
+    7          if locus_split[i] ~= "" then
+    7             filtered_locus_split[#filtered_locus_split + 1] = locus_split[i]
+               end
+
+            end
+    1       locus.name = filtered_locus_split[2]
+
+
+
+
+   13       for _, genbank_molecule in ipairs(genbank_molecule_types) do
+   12          if locus_string:find(genbank_molecule) then
+    1             locus.molecule_type = genbank_molecule
+               end
+            end
+
+
+    1       locus.circular = false
+    1       if locus_string:find("circular") then
+    1          locus.circular = true
+            end
+
+
+   19       for _, genbank_division in ipairs(genbank_divisions) do
+  144          for i, locus_split_without_start in ipairs(locus_split) do
+  126             if i > 2 then
+   90                if locus_split_without_start:find(genbank_division) then
+****0                   locus.genbank_division = genbank_division
+                     end
+                  end
+               end
+            end
+
+
+    1       local start_date, end_date = locus_string:find("%d%d.%a%a%a.%d%d%d%d")
+    1       locus.modification_date = locus_string:sub(start_date, end_date)
+
+    1       return locus
+         end
+
+    1    function parse_metadata(metadata)
+    5       local output_metadata = ""
+    5       if metadata == nil then
+****0          return "."
+            end
+    5       if #metadata == 0 then
+****0          return "."
+            end
+   10       for _, data in ipairs(metadata) do
+    5          output_metadata = output_metadata .. trim(data) .. " "
+            end
+    5       output_metadata = output_metadata:sub(1, #output_metadata - 1)
+    5       return output_metadata
+         end
+
+    1    function parse_references(metadata_data)
+    2       function add_key(reference, reference_key, reference_value)
+
+    7          if reference_key == "AUTHORS" then
+    2             reference.authors = reference_value
+    5          elseif reference_key == "TITLE" then
+    2             reference.title = reference_value
+    3          elseif reference_key == "JOURNAL" then
+    2             reference.journal = reference_value
+    1          elseif reference_key == "PUBMED" then
+    1             reference.pubmed = reference_value
+****0          elseif reference_key == "REMARK" then
+****0             reference.remark = reference_value
+               else
+****0             error("Reference_key not in  [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK]. Got: " .. reference_key)
+               end
+            end
+    2       local reference = {}
+    2       if #metadata_data == 1 then
+****0          error("Got reference with no additional information")
+            end
+
+    2       local range_index = metadata_data[1]:find("%(")
+    2       if range_index ~= nil then
+    2          reference.range = metadata_data[1]:sub(range_index, -1)
+            end
+
+    2       local reference_key = split(trim(metadata_data[2]))[1]
+    2       local reference_value = trim(metadata_data[2]:sub(reference_key:len() + 3, -1))
+
+
+    9       for index = 3, #metadata_data do
+    7          if metadata_data[index]:sub(4, 4) ~= " " then
+    5             add_key(reference, reference_key, reference_value)
+    5             reference_key = trim(split(trim(metadata_data[index]))[1])
+    5             reference_value = trim(metadata_data[index]:sub(reference_key:len() + 3, -1))
+               else
+    2             reference_value = reference_value .. " " .. trim(metadata_data[index])
+               end
+            end
+    2       add_key(reference, reference_key, reference_value)
+    2       return reference
+         end
+
+    1    function get_source_organism(metadata_data)
+    1       local source = trim(metadata_data[1])
+    1       local organism = ""
+    1       local taxonomy = {}
+
+            local data_line
+    2       for iterator = 2, #metadata_data do
+    1          data_line = metadata_data[iterator]
+    1          local head_string = split(trim(data_line))[1]
+    1          if head_string == "ORGANISM" then
+    1             local _, index = data_line:find("ORGANISM")
+    1             organism = trim(data_line:sub(index + 1, -1))
+****0             goto cont
+               end
+****0          for _, taxonomy_data in ipairs(split(trim(data_line), "[^;]+")) do
+****0             local taxonomy_data_trimmed = trim(taxonomy_data)
+
+****0             if taxonomy_data_trimmed:len() > 1 then
+****0                if taxonomy_data_trimmed:sub(-1, -1) == "." then
+****0                   taxonomy_data_trimmed = taxonomy_data_trimmed:sub(1, -2)
+                     end
+****0                taxonomy[#taxonomy + 1] = taxonomy_data_trimmed
+                  end
+               end
+****0          ::cont::
+            end
+    1       return source, organism, taxonomy
+         end
+
+    1    function parse_location(s)
+   27       local location = {}
+   27       location.sub_locations = {}
+   27       if not s:find("%(") then
+   21          if not s:find("%.") then
+****0             local position = tonumber(s)
+****0             location.location_start = position
+****0             location.location_end = position
+               else
+
+   21             local start_end_split = split(s, "[^%.]+")
+   21             location.location_start = tonumber(start_end_split[1])
+   21             location.location_end = tonumber(start_end_split[2])
+               end
+            else
+    6          local first_outer_parentheses = s:find("%(")
+    6          local last_outer_parentheses = s:find("%)")
+    6          local expression = s:sub(first_outer_parentheses + 1, last_outer_parentheses - 1)
+    6          local command = s:sub(1, first_outer_parentheses - 1)
+    6          if command == "join" then
+****0             location.join = true
+
+****0             if expression:find("%(") then
+****0                local first_inner_parentheses = expression:find("%(")
+****0                local parentheses_count = 1
+****0                local comma = 0
+****0                local i = 2
+****0                while (parentheses_count > 0) do
+****0                   comma = i
+****0                   if expression:sub(first_inner_parentheses + i) == "(" then parentheses_count = parentheses_count + 1 end
+****0                   if expression:sub(first_inner_parentheses + i) == ")" then parentheses_count = parentheses_count - 1 end
+****0                   i = i + 1
+                     end
+****0                local parse_left_location = parse_location(expression:sub(1, first_inner_parentheses + comma + 1))
+****0                local parse_right_location = parse_location(expression:sub(2 + first_inner_parentheses + comma, -1))
+****0                location.sub_locations[#location.sub_locations + 1] = parse_left_location
+****0                location.sub_locations[#location.sub_locations + 1] = parse_right_location
+                  else
+****0                for _, number_range in ipairs(split(expression, "[^,]+")) do
+****0                   local join_location = parse_location(number_range)
+****0                   location.sub_locations[#location.sub_locations + 1] = join_location
+                     end
+                  end
+               end
+
+    6          if command == "complement" then
+    6             local sub_location = parse_location(expression)
+    6             sub_location.complement = true
+    6             location.sub_locations[#location.sub_locations + 1] = sub_location
+               end
+            end
+
+   27       if s:find("%<") then
+****0          location.five_prime_partial = true
+            end
+   27       if s:find("%>") then
+****0          location.three_prime_partial = true
+            end
+
+
+   27       if location.location_start == 0 and location.location_end and not location.join and not location.complement then
+****0          location = location.sub_locations[1]
+            end
+   27       return location
+         end
+
+    1    local ParseParameters = {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    1    function params_init()
+    2       local params = {}
+    2       params.new_location = true
+    2       params.parse_step = "metadata"
+    2       params.metadata_tag = ""
+    2       params.genbank = gb.Genbank
+    2       params.genbank_started = false
+
+
+    2       params.attribute_value = ""
+    2       params.feature = gb.Feature
+    2       params.feature.attributes = {}
+    2       params.features = {}
+
+
+    2       params.genbank = gb.Genbank
+    2       params.genbank.meta = gb.Meta
+    2       params.genbank.meta.locus = gb.Locus
+    2       params.genbank.meta.other = {}
+    2       params.genbank.meta.references = {}
+    2       params.genbank.features = {}
+    2       params.genbank.sequence = ""
+    2       return params
+         end
+    1    local params = params_init()
+
+
+    1    local genbanks = {}
+    1    local copied_feature = {}
+    1    local copied_genbank = {}
+    1    local i = 0
+
+
+  142    for line in string.gmatch(input, '[^\r\n]+') do
+  141       local split_line = split(trim(line))
+
+  141       local previous_line = params.current_line
+  141       params.current_line = line
+  141       params.previous_line = previous_line
+
+
+  141       if not params.genbank_started then
+    1          if line:find("LOCUS") then
+    1             params = params_init()
+    1             params.genbank.meta.locus = parse_locus(line)
+    1             params.genbank_started = true
+               end
+****0          goto continue
+            end
+
+
+  140       if params.parse_step == "metadata" then
+
+   20          if line:len() == 0 then
+****0             error("Empty metadata line on " .. i)
+               end
+
+
+   20          if line:sub(1, 1) ~= " " or params.metadata_tag == "FEATURES" then
+
+   10             if params.metadata_tag == "DEFINITION" then
+    1                params.genbank.meta.definition = parse_metadata(params.metadata_data)
+    9             elseif params.metadata_tag == "ACCESSION" then
+    1                params.genbank.meta.accession = parse_metadata(params.metadata_data)
+    8             elseif params.metadata_tag == "VERSION" then
+    1                params.genbank.meta.version = parse_metadata(params.metadata_data)
+    7             elseif params.metadata_tag == "KEYWORDS" then
+    1                params.genbank.meta.keywords = parse_metadata(params.metadata_data)
+    6             elseif params.metadata_tag == "SOURCE" then
+    1                params.genbank.meta.source, params.genbank.meta.organism, params.genbank.meta.taxonomy = get_source_organism(params.metadata_data)
+    5             elseif params.metadata_tag == "REFERENCE" then
+    2                params.genbank.meta.references[#params.genbank.meta.references + 1] = parse_references(params.metadata_data)
+    3             elseif params.metadata_tag == "FEATURES" then
+    1                params.parse_step = "features"
+
+
+    1                params.feature.feature_type = trim(split_line[1])
+    1                params.feature.gbk_location_string = trim(split_line[#split_line])
+    1                params.new_location = true
+****0                goto continue
+                  else
+    2                if params.metadata_tag ~= "" then
+    1                   params.genbank.meta.other[params.metadata_tag] = parse_metadata(params.metadata_data)
+                     end
+                  end
+
+    9             params.metadata_tag = trim(split_line[1])
+    9             params.metadata_data = { trim(line:sub(params.metadata_tag:len() + 1)) }
+               else
+   10             params.metadata_data[#params.metadata_data + 1] = line
+               end
+            end
+
+
+  139       if params.parse_step == "features" then
+
+   74          if line:find("ORIGIN") then
+    1             params.parse_step = "sequence"
+
+
+    1             if params.attribute_value ~= nil then
+    1                params.feature.attributes[params.attribute] = params.attribute_value
+    1                copied_feature = deepcopy(params.feature)
+    1                params.features[#params.features + 1] = copied_feature
+    1                params.attribute_value = ""
+    1                params.attribute = ""
+    1                params.feature = gb.Feature
+                  else
+****0                copied_feature = deepcopy(params.feature)
+****0                params.features[#params.features + 1] = copied_feature
+                  end
+
+
+   22             for _, feature in ipairs(params.features) do
+   21                feature.location = parse_location(feature.gbk_location_string)
+   21                params.genbank.features[#params.genbank.features + 1] = feature
+                  end
+****0             goto continue
+               end
+
+
+   73          local trimmed_line = trim(line)
+   73          if trimmed_line:len() < 1 then
+****0             goto continue
+               end
+
+
+   73          if count_leading_spaces(params.current_line) < count_leading_spaces(params.previous_line) or params.previous_line == "FEATURES" then
+
+   20             if params.attribute_value ~= "" then
+   20                params.feature.attributes[params.attribute] = params.attribute_value
+   20                copied_feature = deepcopy(params.feature)
+   20                params.features[#params.features + 1] = copied_feature
+   20                params.attribute_value = ""
+   20                params.attribute = ""
+   20                params.feature = {}
+   20                params.feature.attributes = {}
+                  end
+
+
+   20             if params.feature.feature_type ~= nil then
+****0                copied_feature = deepcopy(params.feature)
+****0                params.features[#params.features + 1] = copied_feature
+****0                params.feature = {}
+****0                params.feature.attributes = {}
+                  end
+
+
+   20             if #split_line < 2 then
+****0                error("Feature line malformed on line " .. i .. " . Got line: " .. line)
+                  end
+   20             params.feature.feature_type = trim(split_line[1])
+   20             params.feature.gbk_location_string = trim(split_line[#split_line])
+   20             params.multi_line_feature = false
+
+   53          elseif not params.current_line:find("/") then
+
+****0             if not params.current_line:find("\"") and (count_leading_spaces(params.current_line) > count_leading_spaces(params.previous_line) or params.multi_line_feature) then
+****0                params.feature.gbk_location_string = params.feature.gbk_location_string .. trim(line)
+****0                params.multi_line_feature = true
+                  else
+****0                local remove_attribute_value_quotes = trimmed_line:gsub("\"", "")
+****0                params.attribute_value = params.attribute_value .. remove_attribute_value_quotes
+                  end
+   53          elseif params.current_line:find("/") then
+   53             if params.attribute_value ~= "" then
+   32                params.feature.attributes[params.attribute] = params.attribute_value
+                  end
+   53             params.attribute_value = ""
+   53             local split_attribute = split(line, "[^=]+")
+   53             local trimmed_space_attribute = trim(split_attribute[1])
+   53             local removed_forward_slash_attribute = trimmed_space_attribute:gsub("/", "")
+
+   53             params.attribute = removed_forward_slash_attribute
+   53             params.attribute_value = split_attribute[2]:gsub("\"", "")
+
+   53             params.multi_line_feature = false
+               end
+            end
+
+
+  138       if params.parse_step == "sequence" then
+   46          if #line < 2 then
+****0             error("Too short line found while parsing genbank sequence on line " .. i .. ". Got line: " .. line)
+   46          elseif line:sub(1, 3) == "//" then
+    1             copied_genbank = deepcopy(params.genbank)
+    1             genbanks[#genbanks + 1] = copied_genbank
+    1             params.genbank_started = false
+    1             params.genbank.sequence = ""
+               else
+   45             params.genbank.sequence = params.genbank.sequence .. line:gsub("[0-9]-[%s+]", "")
+               end
+            end
+****0       ::continue::
+  141       i = i + 1
+         end
+    1    return genbanks
+      end
+
+    2 return gb
+
+==============================================================================
+genbank_test.lua
+==============================================================================
+    1 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local assert = _tl_compat and _tl_compat.assert or assert; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local gb = require("genbank")
+
+      local puc19 = [[LOCUS       puc19.gbk               2686 bp    DNA     circular  22-OCT-2019
+      DEFINITION  pUC cloning vector.
+      ACCESSION   .
+      VERSION     .
+      KEYWORDS    pUC19
+      SOURCE      synthetic DNA construct
+        ORGANISM  synthetic DNA construct
+      REFERENCE   1  (bases 1 to 2686)
+        AUTHORS   Norrander J, Kempe T, Messing J
+        TITLE     Construction of improved M13 vectors using 
+                  oligodeoxynucleotide-directed mutagenesis.
+        JOURNAL   Gene. 1983 Dec;26(1):101-6.
+        PUBMED    6323249
+      REFERENCE   2  (bases 1 to 2686)
+        AUTHORS   .
+        TITLE     Direct Submission
+        JOURNAL   Exported Sep 13, 2018 from SnapGene Server 1.1.58
+                  http://www.snapgene.com
+      COMMENT             description: pUC cloning vector.
+      FEATURES             Location/Qualifiers
+           source          1..2686
+                           /label="synthetic DNA construct"
+                           /organism="synthetic DNA construct"
+                           /mol_type="other DNA"
+           primer_bind     118..137
+                           /label="pBR322ori-F"
+                           /note="pBR322 origin, forward primer"
+           primer_bind     371..388
+                           /label="L4440"
+                           /note="L4440 vector, forward primer"
+           protein_bind    505..526
+                           /label="CAP binding site"
+                           /bound_moiety="E. coli catabolite activator protein"
+                           /note="CAP binding activates transcription in the presenceof cAMP."
+           promoter        541..571
+                           /label="lac promoter"
+                           /note="promoter for the E. coli lac operon"
+           protein_bind    579..595
+                           /label="lac operator"
+                           /bound_moiety="lac repressor encoded by lacI"
+                           /note="The lac repressor binds to the lac operator toinhibit transcription in E. coli. This inhibition can berelieved by adding lactose orisopropyl-beta-D-thiogalactopyranoside (IPTG)."
+           primer_bind     584..606
+                           /label="M13/pUC Reverse"
+                           /note="In lacZ gene"
+           primer_bind     603..619
+                           /label="M13 rev"
+                           /note="common sequencing primer, one of multiple similarvariants"
+           primer_bind     603..619
+                           /label="M13 Reverse"
+                           /note="In lacZ gene. Also called M13-rev"
+           CDS             615..938
+                           /label="lacZ-alpha"
+                           /codon_start="1"
+                           /gene="lacZ fragment"
+                           /product="LacZ-alpha fragment of beta-galactosidase"
+                           /translation="MTMITPSLHACRSTLEDPRVPSSNSLAVVLQRRDWENPGVTQLNRLAAHPPFASWRNSEEARTDRPSQQLRSLNGEWRLMRYFLLTHLCGISHRIWCTLSTICSDAA"
+           misc_feature    632..688
+                           /label="MCS"
+                           /note="pUC18/19 multiple cloning site"
+           primer_bind     complement(689..706)
+                           /label="M13 Forward"
+                           /note="In lacZ gene. Also called M13-F20 or M13 (-21)Forward"
+           primer_bind     complement(689..705)
+                           /label="M13 fwd"
+                           /note="common sequencing primer, one of multiple similarvariants"
+           primer_bind     complement(698..720)
+                           /label="M13/pUC Forward"
+                           /note="In lacZ gene"
+           primer_bind     complement(914..933)
+                           /label="pRS-marker"
+                           /note="pRS vectors, use to sequence yeast selectablemarker"
+           primer_bind     1033..1055
+                           /label="pGEX 3'"
+                           /note="pGEX vectors, reverse primer"
+           primer_bind     complement(1093..1111)
+                           /label="pBRforEco"
+                           /note="pBR322 vectors, upsteam of EcoRI site, forwardprimer"
+           promoter        1179..1283
+                           /label="AmpR promoter"
+                           /gene="bla"
+           CDS             1284..2144
+                           /label="AmpR"
+                           /codon_start="1"
+                           /gene="bla"
+                           /product="beta-lactamase"
+                           /note="confers resistance to ampicillin, carbenicillin, andrelated antibiotics"
+                           /translation="MSIQHFRVALIPFFAAFCLPVFAHPETLVKVKDAEDQLGARVGYIELDLNSGKILESFRPEERFPMMSTFKVLLCGAVLSRIDAGQEQLGRRIHYSQNDLVEYSPVTEKHLTDGMTVRELCSAAITMSDNTAANLLLTTIGGPKELTAFLHNMGDHVTRLDRWEPELNEAIPNDERDTTMPVAMATTLRKLLTGELLTLASRQQLIDWMEADKVAGPLLRSALPAGWFIADKSGAGERGSRGIIAALGPDGKPSRIVVIYTTGSQATMDERNRQIAEIGASLIKHW"
+           primer_bind     complement(1502..1521)
+                           /label="Amp-R"
+                           /note="Ampicillin resistance gene, reverse primer"
+           rep_origin      2315..217
+                           /label="ori"
+                           /direction="RIGHT"
+                           /note="high-copy-number ColE1/pMB1/pBR322/pUC origin ofreplication"
+      ORIGIN      
+              1 gagataccta cagcgtgagc tatgagaaag cgccacgctt cccgaaggga gaaaggcgga
+             61 caggtatccg gtaagcggca gggtcggaac aggagagcgc acgagggagc ttccaggggg
+            121 aaacgcctgg tatctttata gtcctgtcgg gtttcgccac ctctgacttg agcgtcgatt
+            181 tttgtgatgc tcgtcagggg ggcggagcct atggaaaaac gccagcaacg cggccttttt
+            241 acggttcctg gccttttgct ggccttttgc tcacatgttc tttcctgcgt tatcccctga
+            301 ttctgtggat aaccgtatta ccgcctttga gtgagctgat accgctcgcc gcagccgaac
+            361 gaccgagcgc agcgagtcag tgagcgagga agcggaagag cgcccaatac gcaaaccgcc
+            421 tctccccgcg cgttggccga ttcattaatg cagctggcac gacaggtttc ccgactggaa
+            481 agcgggcagt gagcgcaacg caattaatgt gagttagctc actcattagg caccccaggc
+            541 tttacacttt atgcttccgg ctcgtatgtt gtgtggaatt gtgagcggat aacaatttca
+            601 cacaggaaac agctatgacc atgattacgc caagcttgca tgcctgcagg tcgactctag
+            661 aggatccccg ggtaccgagc tcgaattcac tggccgtcgt tttacaacgt cgtgactggg
+            721 aaaaccctgg cgttacccaa cttaatcgcc ttgcagcaca tccccctttc gccagctggc
+            781 gtaatagcga agaggcccgc accgatcgcc cttcccaaca gttgcgcagc ctgaatggcg
+            841 aatggcgcct gatgcggtat tttctcctta cgcatctgtg cggtatttca caccgcatat
+            901 ggtgcactct cagtacaatc tgctctgatg ccgcatagtt aagccagccc cgacacccgc
+            961 caacacccgc tgacgcgccc tgacgggctt gtctgctccc ggcatccgct tacagacaag
+           1021 ctgtgaccgt ctccgggagc tgcatgtgtc agaggttttc accgtcatca ccgaaacgcg
+           1081 cgagacgaaa gggcctcgtg atacgcctat ttttataggt taatgtcatg ataataatgg
+           1141 tttcttagac gtcaggtggc acttttcggg gaaatgtgcg cggaacccct atttgtttat
+           1201 ttttctaaat acattcaaat atgtatccgc tcatgagaca ataaccctga taaatgcttc
+           1261 aataatattg aaaaaggaag agtatgagta ttcaacattt ccgtgtcgcc cttattccct
+           1321 tttttgcggc attttgcctt cctgtttttg ctcacccaga aacgctggtg aaagtaaaag
+           1381 atgctgaaga tcagttgggt gcacgagtgg gttacatcga actggatctc aacagcggta
+           1441 agatccttga gagttttcgc cccgaagaac gttttccaat gatgagcact tttaaagttc
+           1501 tgctatgtgg cgcggtatta tcccgtattg acgccgggca agagcaactc ggtcgccgca
+           1561 tacactattc tcagaatgac ttggttgagt actcaccagt cacagaaaag catcttacgg
+           1621 atggcatgac agtaagagaa ttatgcagtg ctgccataac catgagtgat aacactgcgg
+           1681 ccaacttact tctgacaacg atcggaggac cgaaggagct aaccgctttt ttgcacaaca
+           1741 tgggggatca tgtaactcgc cttgatcgtt gggaaccgga gctgaatgaa gccataccaa
+           1801 acgacgagcg tgacaccacg atgcctgtag caatggcaac aacgttgcgc aaactattaa
+           1861 ctggcgaact acttactcta gcttcccggc aacaattaat agactggatg gaggcggata
+           1921 aagttgcagg accacttctg cgctcggccc ttccggctgg ctggtttatt gctgataaat
+           1981 ctggagccgg tgagcgtggg tctcgcggta tcattgcagc actggggcca gatggtaagc
+           2041 cctcccgtat cgtagttatc tacacgacgg ggagtcaggc aactatggat gaacgaaata
+           2101 gacagatcgc tgagataggt gcctcactga ttaagcattg gtaactgtca gaccaagttt
+           2161 actcatatat actttagatt gatttaaaac ttcattttta atttaaaagg atctaggtga
+           2221 agatcctttt tgataatctc atgaccaaaa tcccttaacg tgagttttcg ttccactgag
+           2281 cgtcagaccc cgtagaaaag atcaaaggat cttcttgaga tccttttttt ctgcgcgtaa
+           2341 tctgctgctt gcaaacaaaa aaaccaccgc taccagcggt ggtttgtttg ccggatcaag
+           2401 agctaccaac tctttttccg aaggtaactg gcttcagcag agcgcagata ccaaatactg
+           2461 ttcttctagt gtagccgtag ttaggccacc acttcaagaa ctctgtagca ccgcctacat
+           2521 acctcgctct gctaatcctg ttaccagtgg ctgctgccag tggcgataag tcgtgtctta
+           2581 ccgggttgga ctcaagacga tagttaccgg ataaggcgca gcggtcgggc tgaacggggg
+           2641 gttcgtgcac acagcccagc ttggagcgaa cgacctacac cgaact 
+    1 //]]
+
+
+
+    1 function tprint(tbl, indent)
+****0    if not indent then indent = 0 end
+****0    for k, v in pairs(tbl) do
+****0       local formatting = string.rep("  ", indent) .. k .. ": "
+****0       if type(v) == "table" then
+****0          print(formatting)
+****0          tprint(v, indent + 1)
+****0       elseif type(v) == 'boolean' then
+****0          print(formatting .. tostring(v))
+            else
+****0          print(formatting .. v)
+            end
+         end
+      end
+
+    1 function test_genbank()
+    1    local plasmids = gb.parse(puc19)
+    1    assert(plasmids[1].meta.locus.name == "puc19.gbk")
+      end
+
+    1 test_genbank()
+
+==============================================================================
+Summary
+==============================================================================
+
+File             Hits Missed Coverage
+-------------------------------------
+fasta.lua        20   0      100.00%
+fasta_test.lua   10   0      100.00%
+genbank.lua      252  58     81.29%
+genbank_test.lua 7    9      43.75%
+-------------------------------------
+Total            289  67     81.18%
