@@ -1,7 +1,130 @@
 ==============================================================================
+build/io/fasta.lua
+==============================================================================
+    1 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local string = _tl_compat and _tl_compat.string or string
+
+
+
+
+
+
+
+    1 local fasta = {Fasta = {}, }
+
+
+
+
+
+
+
+
+
+
+    1 function fasta.parse(input)
+    1    local output = {}
+    1    local identifier = ""
+    1    local sequence = ""
+    1    local start = true
+    7    for line in string.gmatch(input, '[^\r\n]+') do
+    6       local s = line:sub(1, 1)
+
+    6       if s == ">" then
+
+    2          if start then
+    1             identifier = line:sub(2, -1)
+    1             start = false
+               else
+    1             output[#output + 1] = { identifier = identifier, sequence = sequence }
+    1             identifier = ""
+    1             sequence = ""
+               end
+
+    4       elseif s ~= ">" and s ~= ";" then
+    3          sequence = sequence .. line:gsub("%s+", "")
+            end
+         end
+
+    1    output[#output + 1] = { identifier = identifier, sequence = sequence }
+    1    return output
+      end
+
+    1 return fasta
+
+==============================================================================
+build/io/fastq.lua
+==============================================================================
+    1 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local string = _tl_compat and _tl_compat.string or string
+
+
+
+
+    1 local fastq = {Fastq = {}, }
+
+
+
+
+
+
+
+
+
+
+
+    1 function fastq.parse(input)
+    1    local output = {}
+    1    local identifier = ""
+    1    local sequence = ""
+    1    local quality = ""
+    1    local quality_next = false
+    1    local start = true
+    9    for line in string.gmatch(input, '[^\r\n]+') do
+    8       local s = line:sub(1, 1)
+
+    8       if s == "@" then
+
+    2          if start then
+    1             identifier = line:sub(2, -1)
+    1             start = false
+               else
+    1             output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
+    1             identifier = ""
+    1             sequence = ""
+    1             quality = ""
+               end
+
+    6       elseif s ~= "@" then
+    6          if quality_next == true then
+    2             quality = line
+    2             quality_next = false
+               else
+    4             if s == "+" then
+    2                quality_next = true
+                  else
+    2                sequence = sequence .. line:gsub("%s+", "")
+                  end
+               end
+            end
+         end
+
+    1    output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
+    1    return output
+      end
+
+    1 return fastq
+
+==============================================================================
 build/io/genbank.lua
 ==============================================================================
-    1 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local gb = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
+    1 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string
+
+
+
+
+
+
+
+    1 local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
+
 
 
 
@@ -77,6 +200,7 @@ build/io/genbank.lua
     1 }
 
 
+
     1 local genbank_divisions = {
     1    "PRI",
     1    "ROD",
@@ -99,7 +223,10 @@ build/io/genbank.lua
     1 }
 
 
-    1 function gb.parse(input)
+
+
+
+    1 function genbank.parse(input)
 
     1    function trim(s)
   357       return (s:gsub("^%s*(.-)%s*$", "%1"))
@@ -136,7 +263,7 @@ build/io/genbank.lua
          end
 
     1    function parse_locus(locus_string)
-    1       local locus = gb.Locus
+    1       local locus = genbank.Locus
 
     1       local locus_split = split(trim(locus_string))
     1       local filtered_locus_split = {}
@@ -356,19 +483,19 @@ build/io/genbank.lua
     2       params.new_location = true
     2       params.parse_step = "metadata"
     2       params.metadata_tag = ""
-    2       params.genbank = gb.Genbank
+    2       params.genbank = genbank.Genbank
     2       params.genbank_started = false
 
 
     2       params.attribute_value = ""
-    2       params.feature = gb.Feature
+    2       params.feature = genbank.Feature
     2       params.feature.attributes = {}
     2       params.features = {}
 
 
-    2       params.genbank = gb.Genbank
-    2       params.genbank.meta = gb.Meta
-    2       params.genbank.meta.locus = gb.Locus
+    2       params.genbank = genbank.Genbank
+    2       params.genbank.meta = genbank.Meta
+    2       params.genbank.meta.locus = genbank.Locus
     2       params.genbank.meta.other = {}
     2       params.genbank.meta.references = {}
     2       params.genbank.features = {}
@@ -457,7 +584,7 @@ build/io/genbank.lua
     1                params.features[#params.features + 1] = copied_feature
     1                params.attribute_value = ""
     1                params.attribute = ""
-    1                params.feature = gb.Feature
+    1                params.feature = genbank.Feature
                   else
 ****0                copied_feature = deepcopy(params.feature)
 ****0                params.features[#params.features + 1] = copied_feature
@@ -550,7 +677,7 @@ build/io/genbank.lua
     1    return genbanks
       end
 
-    1 return gb
+    1 return genbank
 
 ==============================================================================
 Summary
@@ -558,6 +685,8 @@ Summary
 
 File                 Hits Missed Coverage
 -----------------------------------------
-build/io/genbank.lua 252  58     81.29%
+build/io/fasta.lua   21   0      100.00%
+build/io/fastq.lua   29   0      100.00%
+build/io/genbank.lua 253  58     81.35%
 -----------------------------------------
-Total                252  58     81.29%
+Total                303  58     83.93%

@@ -1,4 +1,13 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local gb = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
+local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string
+
+
+
+
+
+
+
+local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
+
 
 
 
@@ -74,6 +83,7 @@ local genbank_molecule_types = {
 }
 
 
+
 local genbank_divisions = {
    "PRI",
    "ROD",
@@ -96,7 +106,10 @@ local genbank_divisions = {
 }
 
 
-function gb.parse(input)
+
+
+
+function genbank.parse(input)
 
    function trim(s)
       return (s:gsub("^%s*(.-)%s*$", "%1"))
@@ -133,7 +146,7 @@ function gb.parse(input)
    end
 
    function parse_locus(locus_string)
-      local locus = gb.Locus
+      local locus = genbank.Locus
 
       local locus_split = split(trim(locus_string))
       local filtered_locus_split = {}
@@ -353,19 +366,19 @@ function gb.parse(input)
       params.new_location = true
       params.parse_step = "metadata"
       params.metadata_tag = ""
-      params.genbank = gb.Genbank
+      params.genbank = genbank.Genbank
       params.genbank_started = false
 
 
       params.attribute_value = ""
-      params.feature = gb.Feature
+      params.feature = genbank.Feature
       params.feature.attributes = {}
       params.features = {}
 
 
-      params.genbank = gb.Genbank
-      params.genbank.meta = gb.Meta
-      params.genbank.meta.locus = gb.Locus
+      params.genbank = genbank.Genbank
+      params.genbank.meta = genbank.Meta
+      params.genbank.meta.locus = genbank.Locus
       params.genbank.meta.other = {}
       params.genbank.meta.references = {}
       params.genbank.features = {}
@@ -454,7 +467,7 @@ function gb.parse(input)
                params.features[#params.features + 1] = copied_feature
                params.attribute_value = ""
                params.attribute = ""
-               params.feature = gb.Feature
+               params.feature = genbank.Feature
             else
                copied_feature = deepcopy(params.feature)
                params.features[#params.features + 1] = copied_feature
@@ -547,4 +560,4 @@ function gb.parse(input)
    return genbanks
 end
 
-return gb
+return genbank

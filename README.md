@@ -11,7 +11,7 @@ Synbiolua is a lua package for genetically engineering organisms.
 
 `build` contains lua code, generated from teal
 
-`data` contains test data
+`docs` contains automatically generated ldoc documentation
 
 `spec` contains specification files (ie, test files)
 

@@ -1,3 +1,11 @@
+--[[---------------------------------------------------------------------------
+This module provides a parser for working with FASTA formatted genetic
+sequences.
+
+FASTA is a flat text file format developed in 1985 to store nucleotide and
+amino acid sequences. It is extremely simple and well-supported across many
+languages.
+--]]---------------------------------------------------------------------------
 local record fasta
     record Fasta
         identifier: string
@@ -5,6 +13,10 @@ local record fasta
     end
 end
 
+--- Parses a given FASTA string into a list of FASTA tables.
+-- @param input the input FASTA string
+-- @return a list of FASTA tables, each containing an identifier and a sequence.
+-- @usage local fastas = fasta.parse(">test\natgtaa")
 function fasta.parse(input: string): {fasta.Fasta}
     local output: {fasta.Fasta} = {}
     local identifier: string = ""
