@@ -7,13 +7,13 @@ Synbiolua is a lua package for engineering organisms.
 * __Maintainable:__ synbiolua is built for long term stability and continuous testing.
 
 ### Directories
-`src` contains synbiolua source code (written in [teal](https://github.com/teal-language))
+`src` contains source code (written in [teal](https://github.com/teal-language))
 
-`build` contains synbiolua lua code, generated from teal
+`build` contains lua code, generated from teal
 
-`data` contains synbiolua test data
+`data` contains test data
 
-`spec` contains synbiolua specification files (ie, test files)
+`spec` contains specification files (ie, test files)
 
 ### Building and testing
 To build from source, run:
