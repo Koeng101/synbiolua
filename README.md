@@ -6,6 +6,10 @@ Synbiolua is a lua package for genetically engineering organisms.
 * __Modern:__ synbiolua is built for engineering in the modern day, from codon optimization to synthesis fixing.
 * __Maintainable:__ synbiolua is built for long term stability and continuous testing.
 
+### Documentation
+
+Reference documentation can be found [here](doc/index.html)
+
 ### Directories
 `src` contains source code (written in [teal](https://github.com/teal-language))
 
