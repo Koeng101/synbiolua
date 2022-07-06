@@ -8,7 +8,7 @@ Synbiolua is a lua package for genetically engineering organisms.
 
 ## Documentation
 
-Reference documentation can be found [here](doc/index.html)
+Reference documentation can be found [here](https://koeng101.github.io/synbiolua/doc/index.html)
 
 ### Directories
 * `src` contains source code (written in [teal](https://github.com/teal-language))
