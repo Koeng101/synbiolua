@@ -1,3 +1,10 @@
+--[[---------------------------------------------------------------------------
+This module provides a parser for working with FASTQ formatted sequencing
+files.
+
+FASTQ is a flat file format developed by the Wellcome Trust Sanger Institute in
+~2000 to store sequencing data along with quality data.
+--]]---------------------------------------------------------------------------
 local record fastq
     record Fastq
         identifier: string
@@ -6,6 +13,10 @@ local record fastq
     end
 end
 
+--- Parses a given FASTQ string into a list of FASTQ tables.
+-- @param input the input FASTQ string
+-- @return a list of FASTQ tables, each containing an identifier, a sequence, and a quality score.
+-- @usage local fastqs = fastq.parse("@SEQ_ID\nATGTAA\n+\n!''*%+")
 function fastq.parse(input: string): {fastq.Fastq}
     local output: {fastq.Fastq} = {}
     local identifier: string = ""

@@ -1,0 +1,277 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><strong>codon</strong></li>
+  <li><a href="../modules/fasta.html">fasta</a></li>
+  <li><a href="../modules/fastq.html">fastq</a></li>
+  <li><a href="../modules/genbank.html">genbank</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>codon</code></h1>
+<p>The codon module provides functions to work with codon tables, including the
+translation of DNA/RNA into protein and the codon optimization (given a certain
+organism's codon table) of a protein sequence into a nucleotide sequence.</p>
+<p></p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#ncbi_standard_to_codon_table">ncbi_standard_to_codon_table (amino_acids, starts)</a></td>
+	<td class="summary">Generates a codon table from a list of amino acids and a list of start codons, given in the standard NCBI codon table format.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#new_table">new_table (table_number)</a></td>
+	<td class="summary">Generates a new codon table given an NCBI codon table number.</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#CODON_TABLES">CODON_TABLES</a></td>
+	<td class="summary">codon.CODON_TABLES are current NCBI sanctioned codon tables with their respective numbers.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "ncbi_standard_to_codon_table"></a>
+    <strong>ncbi_standard_to_codon_table (amino_acids, starts)</strong>
+    </dt>
+    <dd>
+    Generates a codon table from a list of amino acids and a list of start codons, given in the standard NCBI codon table format.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">amino_acids</span>
+         the amino acid string
+        </li>
+        <li><span class="parameter">starts</span>
+         the start codon string
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        a codon table
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> ct = codon.ncbi_standard_to_codon_table(<span class="string">"FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"</span>, <span class="string">"---M------**--*----M------------MMMM---------------M------------"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "new_table"></a>
+    <strong>new_table (table_number)</strong>
+    </dt>
+    <dd>
+    Generates a new codon table given an NCBI codon table number.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">table_number</span>
+         the table number
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        a codon table
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> ct = codon.new_table(<span class="number">11</span>)</pre>
+    </ul>
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "CODON_TABLES"></a>
+    <strong>CODON_TABLES</strong>
+    </dt>
+    <dd>
+    codon.CODON_TABLES are current NCBI sanctioned codon tables with their respective numbers.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">1</span>
+         Translation table 1
+        </li>
+        <li><span class="parameter">2</span>
+         Translation table 2
+        </li>
+        <li><span class="parameter">3</span>
+         Translation table 3
+        </li>
+        <li><span class="parameter">4</span>
+         Translation table 4
+        </li>
+        <li><span class="parameter">5</span>
+         Translation table 5
+        </li>
+        <li><span class="parameter">6</span>
+         Translation table 6
+        </li>
+        <li><span class="parameter">7</span>
+         Translation table 7
+        </li>
+        <li><span class="parameter">8</span>
+         Translation table 8
+        </li>
+        <li><span class="parameter">9</span>
+         Translation table 9
+        </li>
+        <li><span class="parameter">10</span>
+         Translation table 10
+        </li>
+        <li><span class="parameter">11</span>
+         Translation table 11
+        </li>
+        <li><span class="parameter">12</span>
+         Translation table 12
+        </li>
+        <li><span class="parameter">13</span>
+         Translation table 13
+        </li>
+        <li><span class="parameter">14</span>
+         Translation table 14
+        </li>
+        <li><span class="parameter">15</span>
+         Translation table 15
+        </li>
+        <li><span class="parameter">16</span>
+         Translation table 16
+        </li>
+        <li><span class="parameter">17</span>
+         Translation table 17
+        </li>
+        <li><span class="parameter">18</span>
+         Translation table 18
+        </li>
+        <li><span class="parameter">19</span>
+         Translation table 19
+        </li>
+        <li><span class="parameter">20</span>
+         Translation table 20
+        </li>
+        <li><span class="parameter">21</span>
+         Translation table 21
+        </li>
+        <li><span class="parameter">22</span>
+         Translation table 22
+        </li>
+        <li><span class="parameter">23</span>
+         Translation table 23
+        </li>
+        <li><span class="parameter">24</span>
+         Translation table 24
+        </li>
+        <li><span class="parameter">25</span>
+         Translation table 25
+        </li>
+        <li><span class="parameter">26</span>
+         Translation table 26
+        </li>
+        <li><span class="parameter">27</span>
+         Translation table 27
+        </li>
+        <li><span class="parameter">28</span>
+         Translation table 28
+        </li>
+        <li><span class="parameter">29</span>
+         Translation table 29
+        </li>
+        <li><span class="parameter">30</span>
+         Translation table 30
+        </li>
+        <li><span class="parameter">31</span>
+         Translation table 31
+        </li>
+        <li><span class="parameter">32</span>
+         Translation table 32
+        </li>
+        <li><span class="parameter">33</span>
+         Translation table 33
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2022-07-06 12:16:17 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

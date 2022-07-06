@@ -1,0 +1,255 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><a href="../modules/codon.html">codon</a></li>
+  <li><a href="../modules/fasta.html">fasta</a></li>
+  <li><a href="../modules/fastq.html">fastq</a></li>
+  <li><strong>genbank</strong></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>genbank</code></h1>
+<p>This module provides a parser for working with GenBank formatted genetic
+sequences.</p>
+<p>
+<p>GenBank is a flat text file format developed in the 1980s to annotate genetic
+sequences, and has since become the standard for sharing annotated genetic
+sequences.</p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#parse">parse (input)</a></td>
+	<td class="summary">Parses a given genbank string into a list of genbank tables</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#GENBANK_MOLECULE_TYPES">GENBANK_MOLECULE_TYPES</a></td>
+	<td class="summary">Genbank molecule types; mirrors poly's genbank parser.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GENBANK_DIVISIONS">GENBANK_DIVISIONS</a></td>
+	<td class="summary">Genbank divisions; mirrors poly's genbank parser.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "parse"></a>
+    <strong>parse (input)</strong>
+    </dt>
+    <dd>
+    Parses a given genbank string into a list of genbank tables
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">input</span>
+         the input genbank string
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        a list of genbank tables
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> plasmids = genbank.parse(plasmids_gbk_string)</pre>
+    </ul>
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "GENBANK_MOLECULE_TYPES"></a>
+    <strong>GENBANK_MOLECULE_TYPES</strong>
+    </dt>
+    <dd>
+    Genbank molecule types; mirrors poly's genbank parser.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">DNA</span>
+
+        </li>
+        <li><span class="parameter">genomic DNA</span>
+
+        </li>
+        <li><span class="parameter">genomic RNA</span>
+
+        </li>
+        <li><span class="parameter">mRNA</span>
+
+        </li>
+        <li><span class="parameter">tRNA</span>
+
+        </li>
+        <li><span class="parameter">rRNA</span>
+
+        </li>
+        <li><span class="parameter">other RNA</span>
+
+        </li>
+        <li><span class="parameter">other DNA</span>
+
+        </li>
+        <li><span class="parameter">transcribed RNA</span>
+
+        </li>
+        <li><span class="parameter">viral cRNA</span>
+
+        </li>
+        <li><span class="parameter">unassigned DNA</span>
+
+        </li>
+        <li><span class="parameter">unassigned RNA</span>
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GENBANK_DIVISIONS"></a>
+    <strong>GENBANK_DIVISIONS</strong>
+    </dt>
+    <dd>
+    Genbank divisions; mirrors poly's genbank parser.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">PRI</span>
+        primate sequences
+        </li>
+        <li><span class="parameter">ROD</span>
+        rodent sequences
+        </li>
+        <li><span class="parameter">MAM</span>
+        other mamallian sequences
+        </li>
+        <li><span class="parameter">VRT</span>
+        other vertebrate sequences
+        </li>
+        <li><span class="parameter">INV</span>
+        invertebrate sequences
+        </li>
+        <li><span class="parameter">PLN</span>
+        plant, fungal, and algal sequences
+        </li>
+        <li><span class="parameter">BCT</span>
+        bacterial sequences
+        </li>
+        <li><span class="parameter">VRL</span>
+        viral sequences
+        </li>
+        <li><span class="parameter">PHG</span>
+        bacteriophage sequences
+        </li>
+        <li><span class="parameter">SYN</span>
+        synthetic sequences
+        </li>
+        <li><span class="parameter">UNA</span>
+        unannotated sequences
+        </li>
+        <li><span class="parameter">EST</span>
+        EST sequences (expressed sequence tags)
+        </li>
+        <li><span class="parameter">PAT</span>
+        patent sequences
+        </li>
+        <li><span class="parameter">STS</span>
+        STS sequences (sequence tagged sites)
+        </li>
+        <li><span class="parameter">GSS</span>
+        GSS sequences (genome survey sequences)
+        </li>
+        <li><span class="parameter">HTG</span>
+        HTG sequences (high-throughput genomic sequences)
+        </li>
+        <li><span class="parameter">HTC</span>
+        unfinished high-throughput cDNA sequencing
+        </li>
+        <li><span class="parameter">ENV</span>
+        environmental sampling sequences
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2022-07-06 12:16:17 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
