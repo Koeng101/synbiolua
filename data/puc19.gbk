@@ -1,6 +1,4 @@
-local gb = require("genbank")
-
-local puc19: string = [[LOCUS       puc19.gbk               2686 bp    DNA     circular  22-OCT-2019
+LOCUS       puc19.gbk               2686 bp    DNA     circular  22-OCT-2019
 DEFINITION  pUC cloning vector.
 ACCESSION   .
 VERSION     .
@@ -140,28 +138,4 @@ ORIGIN
      2521 acctcgctct gctaatcctg ttaccagtgg ctgctgccag tggcgataag tcgtgtctta
      2581 ccgggttgga ctcaagacga tagttaccgg ataaggcgca gcggtcgggc tgaacggggg
      2641 gttcgtgcac acagcccagc ttggagcgaa cgacctacac cgaact 
-//]]
-
--- tprint can be used for printing out genbank files that are being finicky
--- to test.
-function tprint (tbl: any, indent:integer)
-  if not indent then indent = 0 end
-  for k, v in pairs(tbl as {any:any}) do
-    local formatting = string.rep("  ", indent) .. k as string .. ": "
-    if type(v) == "table" then
-      print(formatting)
-      tprint(v as {any}, indent+1)
-    elseif type(v) == 'boolean' then
-      print(formatting .. tostring(v))      
-    else
-      print(formatting .. v as string)
-    end
-  end
-end
-
-function test_genbank()
-    local plasmids = gb.parse(puc19)
-    assert(plasmids[1].meta.locus.name == "puc19.gbk")
-end
-
-test_genbank()
+//
