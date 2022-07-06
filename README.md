@@ -1,9 +1,9 @@
 # synbiolua
 
-Synbiolua is a lua package for engineering organisms.
+Synbiolua is a lua package for genetically engineering organisms.
 
 * __Embeddable:__ synbiolua can be embedded in larger programs
-* __Modern:__ synbiolua is built for engineering organisms in the modern day, from genbank parsing to synthesis fixing.
+* __Modern:__ synbiolua is built for engineering in the modern day, from codon optimization to synthesis fixing.
 * __Maintainable:__ synbiolua is built for long term stability and continuous testing.
 
 ### Directories
