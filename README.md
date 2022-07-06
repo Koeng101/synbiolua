@@ -8,8 +8,11 @@ Synbiolua is a lua package for engineering organisms.
 
 ### Directories
 `src` contains synbiolua source code (written in [teal](https://github.com/teal-language))
+
 `build` contains synbiolua lua code, generated from teal
+
 `data` contains synbiolua test data
+
 `spec` contains synbiolua specification files (ie, test files)
 
 ### Building and testing
