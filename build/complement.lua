@@ -6,6 +6,8 @@ local complement = {}
 
 
 
+
+
 complement.COMPLEMENTS = {
    A = "T",
    B = "V",
@@ -35,6 +37,7 @@ end
 function complement.reverse_complement(sequence)
    local s = ""
    for i = 1, #sequence do
+      if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
    end
    return s:reverse()

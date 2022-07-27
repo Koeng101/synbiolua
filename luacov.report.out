@@ -1,15 +1,17 @@
 ==============================================================================
 build/complement.lua
 ==============================================================================
-    2 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string
+    3 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string
 
 
 
-    2 local complement = {}
+    3 local complement = {}
 
 
 
-    2 complement.COMPLEMENTS = {
+
+
+    3 complement.COMPLEMENTS = {
          A = "T",
          B = "V",
          C = "G",
@@ -26,24 +28,25 @@ build/complement.lua
          V = "B",
          W = "W",
          Y = "R",
-    2 }
-   54 for k, v in pairs(complement.COMPLEMENTS) do
-  156    complement.COMPLEMENTS[k:lower()] = v:lower()
+    3 }
+   60 for k, v in pairs(complement.COMPLEMENTS) do
+  171    complement.COMPLEMENTS[k:lower()] = v:lower()
       end
 
 
 
 
 
-    2 function complement.reverse_complement(sequence)
-    1    local s = ""
-   33    for i = 1, #sequence do
-   64       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
+    3 function complement.reverse_complement(sequence)
+    5    local s = ""
+  104    for i = 1, #sequence do
+  198       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
+  198       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
          end
-    1    return s:reverse()
+    5    return s:reverse()
       end
 
-    2 return complement
+    3 return complement
 
 ==============================================================================
 build/fasta.lua
@@ -747,14 +750,144 @@ build/genbank.lua
     1 return genbank
 
 ==============================================================================
+build/primers.lua
+==============================================================================
+    1 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local math = _tl_compat and _tl_compat.math or math; local string = _tl_compat and _tl_compat.string or string
+
+
+    1 local complement = require("complement")
+    1 local primers = {thermodynamics = {}, }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    1 primers.nearest_neighbors_thermodynamics = {
+    1    AA = { h = -7.6, s = -21.3 },
+    1    TT = { h = -7.6, s = -21.3 },
+    1    AT = { h = -7.2, s = -20.4 },
+    1    TA = { h = -7.2, s = -21.3 },
+    1    CA = { h = -8.5, s = -22.7 },
+    1    TG = { h = -8.5, s = -22.7 },
+    1    GT = { h = -8.4, s = -22.4 },
+    1    AC = { h = -8.4, s = -22.4 },
+    1    CT = { h = -7.8, s = -21.0 },
+    1    AG = { h = -7.8, s = -21.0 },
+    1    GA = { h = -8.2, s = -22.2 },
+    1    TC = { h = -8.2, s = -22.2 },
+    1    CG = { h = -10.6, s = -27.2 },
+    1    GC = { h = -9.8, s = -24.4 },
+    1    GG = { h = -8.0, s = -19.9 },
+    1    CC = { h = -8.0, s = -19.9 },
+    1 }
+    1 primers.initial_thermodynamic_penalty = { h = 0.2, s = -5.7 }
+    1 primers.symmetry_thermodynamic_penalty = { h = 0, s = -1.4 }
+    1 primers.terminal_at_thermodynamic_penalty = { h = 2.2, s = 6.9 }
+
+
+
+
+
+
+
+
+    1 function primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
+
+    4    local melting_temperature = 0
+    4    local dH = 0
+    4    local dS = 0
+
+    8    sequence = sequence:upper()
+    4    local gas_constant = 1.9872
+    4    local symmetry_factor = 4
+
+
+    4    dH = dH + primers.initial_thermodynamic_penalty.h
+    4    dS = dS + primers.initial_thermodynamic_penalty.s
+
+    8    if sequence == complement.reverse_complement(sequence) then
+    1       dH = dH + primers.symmetry_thermodynamic_penalty.h
+    1       dS = dS + primers.symmetry_thermodynamic_penalty.s
+    1       symmetry_factor = 1
+         end
+
+   11    if sequence:sub(-1, -1) == "A" or sequence:sub(-1, -1) == "T" then
+    3       dH = dH + primers.terminal_at_thermodynamic_penalty.h
+    3       dS = dS + primers.terminal_at_thermodynamic_penalty.s
+         end
+
+    4    local salt_effect = salt_concentration + (magnesium_concentration * 140)
+    8    dS = dS + ((0.368 * (sequence:len() - 1)) * math.log(salt_effect))
+
+   71    for i = 1, sequence:len() - 1, 1 do
+  126       local dT = primers.nearest_neighbors_thermodynamics[sequence:sub(i, i + 1)]
+   63       dH = dH + dT.h
+   63       dS = dS + dT.s
+         end
+
+    4    melting_temperature = dH * 1000 / (dS + gas_constant * math.log(primer_concentration / symmetry_factor)) - 273.15
+    4    return melting_temperature
+      end
+
+
+
+
+
+    1 function primers.marmur_doty(sequence)
+    2    sequence = sequence:upper()
+    1    local _, a_count = sequence:gsub("A", "")
+    1    local _, t_count = sequence:gsub("T", "")
+    1    local _, g_count = sequence:gsub("G", "")
+    1    local _, c_count = sequence:gsub("C", "")
+    1    return 2 * (a_count + t_count) + 4 * (g_count + c_count) - 7.0
+      end
+
+
+
+
+
+    1 function primers.melting_temp(sequence)
+    1    local primer_concentration = 0.000000500
+    1    local salt_concentration = 0.050
+    1    local magnesium_concentration = 0.0
+    1    return primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
+      end
+    1 return primers
+
+==============================================================================
 Summary
 ==============================================================================
 
 File                 Hits Missed Coverage
 -----------------------------------------
-build/complement.lua 12   0      100.00%
+build/complement.lua 13   0      100.00%
 build/fasta.lua      21   0      100.00%
 build/fastq.lua      29   0      100.00%
 build/genbank.lua    242  57     80.94%
+build/primers.lua    61   0      100.00%
 -----------------------------------------
-Total                304  57     84.21%
+Total                366  57     86.52%

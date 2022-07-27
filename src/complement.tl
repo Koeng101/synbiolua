@@ -30,13 +30,14 @@ for k, v in pairs(complement.COMPLEMENTS) do
 	complement.COMPLEMENTS[k:lower()] = v:lower()
 end
 
---- Returns reverse complement of a sequence.
+--- Returns reverse complement of a sequence, returns empty string if unknown character.
 -- @param sequence the sequence to reverse complement
 -- @return the reverse complement
 -- @usage local s = complement.reverse_complement("ATGC")
 function complement.reverse_complement(sequence: string): string
 	local s: string = ""
 	for i = 1, #sequence do
+		if complement.COMPLEMENTS[sequence:sub(i,i)] == nil then return "" end
 		s = s .. complement.COMPLEMENTS[sequence:sub(i,i)]
 	end
 	return s:reverse()
