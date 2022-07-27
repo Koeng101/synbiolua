@@ -141,5 +141,29 @@ end
 function codon.new_table(table_number: number): codon.CodonTable
     return codon.ncbi_standard_to_codon_table(codon.CODON_TABLES[table_number][1], codon.CODON_TABLES[table_number][2])
 end
+--[[---------------------------------------------------------------------------
+July, 21, 2022
+
+Codon table filling begins here.
+
+In order to be useful for optimization or fixing, codon tables need to be
+filled with data.
+
+]]-----------------------------------------------------------------------------
+
+--[[---------------------------------------------------------------------------
+July, 21, 2022
+
+Compromise + Add codon table begins here.
+
+## Compromise tables
+If you want to codon optimize a protein for two or more organisms, you will
+want a codon table that works for both organisms. Compromise codon tables
+standardize codon counts so the weights are equal between both organisms.
+Then, they are added together. There is also a variable for removing rare
+codons, which is essential to get good protein yield in many organisms(however,
+this feature makes compromise tables lossy).
+
+]]-----------------------------------------------------------------------------
 
 return codon

@@ -6,7 +6,27 @@ local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 th
 
 
 
-local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
+local complement = require("complement")
+
+local genbank = {}
+
+local Locus = {}
+
+
+
+
+
+
+
+local Reference = {}
+
+
+
+
+
+
+
+local Meta = {}
 
 
 
@@ -21,6 +41,24 @@ local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature =
 
 
 
+local Location = {}
+
+
+
+
+
+
+
+
+local Feature = {}
+
+
+
+
+
+
+
+local Genbank = {}
 
 
 
@@ -30,44 +68,7 @@ local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature =
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-local genbank_molecule_types = {
+local GENBANK_MOLECULE_TYPES = {
    "DNA",
    "genomic DNA",
    "genomic RNA",
@@ -84,7 +85,7 @@ local genbank_molecule_types = {
 
 
 
-local genbank_divisions = {
+local GENBANK_DIVISIONS = {
    "PRI",
    "ROD",
    "MAM",
@@ -146,7 +147,7 @@ function genbank.parse(input)
    end
 
    function parse_locus(locus_string)
-      local locus = genbank.Locus
+      local locus = Locus
 
       local locus_split = split(trim(locus_string))
       local filtered_locus_split = {}
@@ -161,7 +162,7 @@ function genbank.parse(input)
 
 
 
-      for _, genbank_molecule in ipairs(genbank_molecule_types) do
+      for _, genbank_molecule in ipairs(GENBANK_MOLECULE_TYPES) do
          if locus_string:find(genbank_molecule) then
             locus.molecule_type = genbank_molecule
          end
@@ -174,7 +175,7 @@ function genbank.parse(input)
       end
 
 
-      for _, genbank_division in ipairs(genbank_divisions) do
+      for _, genbank_division in ipairs(GENBANK_DIVISIONS) do
          for i, locus_split_without_start in ipairs(locus_split) do
             if i > 2 then
                if locus_split_without_start:find(genbank_division) then
@@ -366,19 +367,19 @@ function genbank.parse(input)
       params.new_location = true
       params.parse_step = "metadata"
       params.metadata_tag = ""
-      params.genbank = genbank.Genbank
+      params.genbank = Genbank
       params.genbank_started = false
 
 
       params.attribute_value = ""
-      params.feature = genbank.Feature
+      params.feature = Feature
       params.feature.attributes = {}
       params.features = {}
 
 
-      params.genbank = genbank.Genbank
-      params.genbank.meta = genbank.Meta
-      params.genbank.meta.locus = genbank.Locus
+      params.genbank = Genbank
+      params.genbank.meta = Meta
+      params.genbank.meta.locus = Locus
       params.genbank.meta.other = {}
       params.genbank.meta.references = {}
       params.genbank.features = {}
@@ -467,7 +468,7 @@ function genbank.parse(input)
                params.features[#params.features + 1] = copied_feature
                params.attribute_value = ""
                params.attribute = ""
-               params.feature = genbank.Feature
+               params.feature = Feature
             else
                copied_feature = deepcopy(params.feature)
                params.features[#params.features + 1] = copied_feature
@@ -560,4 +561,21 @@ function genbank.parse(input)
    return genbanks
 end
 
+function genbank.feature_sequence(self, parent)
+   function get_location(location, sequence)
+      local seq = ""
+      if #location.sub_locations == 0 then
+         seq = sequence:sub(location.location_start, location.location_end):upper()
+      else
+         for _, sub_location in ipairs(location.sub_locations) do
+            seq = seq .. get_location(sub_location, sequence)
+         end
+      end
+      if location.complement then
+         seq = complement.reverse_complement(seq)
+      end
+      return seq
+   end
+   return get_location(self.location, parent.sequence)
+end
 return genbank

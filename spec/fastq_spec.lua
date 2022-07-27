@@ -1,4 +1,4 @@
-local fastq = require("build.io.fastq")
+local fastq = require("build.fastq")
 
 local test_case = [[@SEQ_ID
 GATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT

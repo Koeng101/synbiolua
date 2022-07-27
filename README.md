@@ -24,7 +24,7 @@ cyan build
 
 To test from source, run:
 ```
-busted -c
+busted -c -m "./build/?.lua"
 ```
 
 ### Thanks

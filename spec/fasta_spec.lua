@@ -1,4 +1,4 @@
-local fasta = require("build.io.fasta")
+local fasta = require("build.fasta")
 
 local test_case = [[>hello there
 atg

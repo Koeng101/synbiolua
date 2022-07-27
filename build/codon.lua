@@ -1,4 +1,45 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local codon = {Codon = {}, AminoAcid = {}, CodonTable = {}, }
+local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string
+
+
+
+
+local codon = {Codon = {}, AminoAcid = {}, CodonTable = {}, }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -55,14 +96,20 @@ codon.CODON_TABLES = {
    [33] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------" },
 }
 
-function codon.generate_codon_table(aminoAcids, starts)
+
+
+
+
+
+
+function codon.ncbi_standard_to_codon_table(amino_acids, starts)
    local base1 = "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
    local base2 = "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
    local base3 = "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
-   local aminoAcidTable = {}
+   local amino_acid_table = {}
    local ct = {}
    ct.start_codons = {}
-   for i = 1, #aminoAcids do
+   for i = 1, #amino_acids do
       local triplet = base1:sub(i, i) .. base2:sub(i, i) .. base3:sub(i, i)
 
       if starts:sub(i, i) == "M" then
@@ -71,24 +118,52 @@ function codon.generate_codon_table(aminoAcids, starts)
          ct.start_codons[#ct.start_codons + 1] = start_codon
       end
 
-      local aminoAcid = aminoAcids:sub(i, i)
-      if aminoAcidTable[aminoAcid] == nil then
-         aminoAcidTable[aminoAcid] = { { triplet = triplet, weight = 0 } }
+      local amino_acid = amino_acids:sub(i, i)
+      if amino_acid_table[amino_acid] == nil then
+         amino_acid_table[amino_acid] = { { triplet = triplet, weight = 0 } }
       else
-         aminoAcidTable[aminoAcid][#aminoAcidTable[aminoAcid] + 1] = { triplet = triplet, weight = 0 }
+         amino_acid_table[amino_acid][#amino_acid_table[amino_acid] + 1] = { triplet = triplet, weight = 0 }
       end
    end
 
 
    ct.amino_acids = {}
-   for aminoAcid, codons in pairs(aminoAcidTable) do
-      ct.amino_acids[#ct.amino_acids + 1] = { letter = aminoAcid, codons = codons }
+   for amino_acid, codons in pairs(amino_acid_table) do
+      ct.amino_acids[#ct.amino_acids + 1] = { letter = amino_acid, codons = codons }
    end
    return ct
 end
 
+
+
+
+
 function codon.new_table(table_number)
-   return codon.generate_codon_table(codon.CODON_TABLES[table_number][1], codon.CODON_TABLES[table_number][2])
+   return codon.ncbi_standard_to_codon_table(codon.CODON_TABLES[table_number][1], codon.CODON_TABLES[table_number][2])
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 return codon
