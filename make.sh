@@ -2,6 +2,7 @@
 [ -e tmp.tl ] && rm tmp.tl
 
 sed '$d' src/complement.tl >> tmp.tl
+sed '$d' src/json.tl >> tmp.tl
 sed '$d' src/fasta.tl >> tmp.tl
 sed '$d' src/fastq.tl >> tmp.tl
 sed '$d' src/primers.tl >> tmp.tl

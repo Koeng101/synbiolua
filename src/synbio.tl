@@ -9,6 +9,7 @@ local fastq = require("fastq")
 local primers = require("primers")
 local genbank = require("genbank")
 local codon = require("codon")
+local json = require("json")
 
 local record synbio
     version: string
@@ -18,6 +19,7 @@ local record synbio
     primers: primers
     genbank: genbank
     codon: codon
+    json: json
 end
 
 synbio.version = "SUBSTITUTE_WITH_VERSION_NUMBER"
@@ -27,5 +29,6 @@ synbio.fastq = fastq
 synbio.primers = primers
 synbio.genbank = genbank
 synbio.codon = codon
+synbio.json = json
 
 return synbio

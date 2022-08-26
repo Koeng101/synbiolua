@@ -6,7 +6,8 @@ GenBank is a flat text file format developed in the 1980s to annotate genetic
 sequences, and has since become the standard for sharing annotated genetic
 sequences.
 --]]---------------------------------------------------------------------------
-global complement = require("complement")
+local complement = require("complement")
+local json = require("json")
 
 local record genbank
     record Locus
@@ -64,6 +65,9 @@ local record genbank
     end
     GENBANK_MOLECULE_TYPES: {string}
     GENBANK_DIVISIONS: {string}
+
+    from_json: function(string): Genbank
+    to_json: function(Genbank): string
 end
 
 --- Genbank molecule types; mirrors poly's genbank parser.
@@ -583,6 +587,20 @@ function genbank.feature_sequence(self: genbank.Feature, parent: genbank.Genbank
 		return seq
 	end
 	return get_location(self.location, parent.sequence)
+end
+
+--[[---------------------------------------------------------------------------
+
+--                          JSON
+
+---------------------------------------------------------------------------]]--
+
+function genbank.from_json(str: string): genbank.Genbank
+    return json.decode(str) as genbank.Genbank
+end
+
+function genbank.to_json(self: genbank.Genbank): string
+    return json.encode(self)
 end
 
 return genbank

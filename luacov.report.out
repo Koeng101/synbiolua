@@ -1,49 +1,409 @@
 ==============================================================================
 build/synbio.lua
 ==============================================================================
-    5 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string
+    6 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local table = _tl_compat and _tl_compat.table or table
 
 
 
-    5 local complement = {}
+    6 local complement = {}
 
 
 
 
 
-    5 complement.COMPLEMENTS = {
-    5    A = "T",
-    5    B = "V",
-    5    C = "G",
-    5    D = "H",
-    5    G = "C",
-    5    H = "D",
-    5    K = "M",
-    5    M = "K",
-    5    N = "N",
-    5    R = "Y",
-    5    S = "S",
-    5    T = "A",
-    5    U = "A",
-    5    V = "B",
-    5    W = "W",
-    5    Y = "R",
-    5 }
-  125 for k, v in pairs(complement.COMPLEMENTS) do
-  120    complement.COMPLEMENTS[k:lower()] = v:lower()
+    6 complement.COMPLEMENTS = {
+    6    A = "T",
+    6    B = "V",
+    6    C = "G",
+    6    D = "H",
+    6    G = "C",
+    6    H = "D",
+    6    K = "M",
+    6    M = "K",
+    6    N = "N",
+    6    R = "Y",
+    6    S = "S",
+    6    T = "A",
+    6    U = "A",
+    6    V = "B",
+    6    W = "W",
+    6    Y = "R",
+    6 }
+   84 for k, v in pairs(complement.COMPLEMENTS) do
+   78    complement.COMPLEMENTS[k:lower()] = v:lower()
       end
 
 
 
 
 
-    5 function complement.reverse_complement(sequence)
+    6 function complement.reverse_complement(sequence)
     6    local s = ""
-  122    for i = 1, #sequence do
-  116       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
-  116       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
+  115    for i = 1, #sequence do
+  110       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
+  109       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
          end
-    6    return s:reverse()
+    5    return s:reverse()
+      end
+
+    6 local json = {}
+
+
+
+
+
+
+
+
+
+
+      local encode
+
+    6 local escape_char_map = {
+    6    ["\\"] = "\\",
+    6    ["\""] = "\"",
+    6    ["\b"] = "b",
+    6    ["\f"] = "f",
+    6    ["\n"] = "n",
+    6    ["\r"] = "r",
+    6    ["\t"] = "t",
+      }
+
+    6 local escape_char_map_inv = { ["/"] = "/" }
+   48 for k, v in pairs(escape_char_map) do
+   42    escape_char_map_inv[v] = k
+      end
+
+      local function escape_char(c)
+   18    return "\\" .. (escape_char_map[c] or string.format("u%04x", c:byte()))
+      end
+
+      local function encode_nil(_)
+    1    return "null"
+      end
+
+      local function encode_table(val, stack)
+    8    local res = {}
+    8    stack = stack or {}
+
+
+    8    if stack[val] then error("circular reference") end
+    8    stack[val] = true
+
+    8    if rawget(val, 1) ~= nil or next(val) == nil then
+
+    3       local n = 0
+    9       for k in pairs(val) do
+    7          if type(k) ~= "number" then
+    1             error("invalid table: mixed or invalid key types")
+               end
+    6          n = n + 1
+            end
+    2       if n ~= #val then
+    1          error("invalid table: sparse array")
+            end
+
+    4       for _, v in ipairs(val) do
+    3          table.insert(res, encode(v, stack))
+            end
+    1       stack[val] = nil
+    1       return "[" .. table.concat(res, ",") .. "]"
+
+         else
+
+    8       for k, v in pairs(val) do
+    7          if type(k) ~= "string" then
+    4             error("invalid table: mixed or invalid key types")
+               end
+    3          local stack_value = encode(v, stack)
+    3          if stack_value ~= nil then
+    3             table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
+               end
+            end
+    1       stack[val] = nil
+    1       return "{" .. table.concat(res, ",") .. "}"
+         end
+      end
+
+      local function encode_string(val)
+   17    return '"' .. val:gsub('[%z\1-\31\\"]', escape_char) .. '"'
+      end
+
+
+      local function encode_number(val)
+
+   15    if val ~= val or val <= -math.huge or val >= math.huge then
+    3       error("unexpected number value '" .. tostring(val) .. "'")
+         end
+   12    return string.format("%.14g", val)
+      end
+
+
+    6 local type_func_map = {
+    6    ["nil"] = encode_nil,
+    6    ["table"] = encode_table,
+    6    ["string"] = encode_string,
+    6    ["number"] = encode_number,
+    6    ["boolean"] = tostring,
+      }
+
+      encode = function(val, stack)
+   43    local t = type(val)
+   43    local f = type_func_map[t]
+   43    if f then
+   43       return f(val, stack)
+         end
+****0    if t ~= "function" then
+****0       error("unexpected type '" .. t .. "'")
+         end
+      end
+
+    6 function json.encode(val)
+   31    return encode(val)
+      end
+
+      local parse
+
+      local function create_set(...)
+   24    local res = {}
+  162    for i = 1, select("#", ...) do
+  138       res[select(i, ...)] = true
+         end
+   24    return res
+      end
+
+    6 local space_chars = create_set(" ", "\t", "\r", "\n")
+    6 local delim_chars = create_set(" ", "\t", "\r", "\n", "]", "}", ",")
+    6 local escape_chars = create_set("\\", "/", '"', "b", "f", "n", "r", "t", "u")
+    6 local literals = create_set("true", "false", "null")
+
+    6 local literal_map = {
+    6    ["true"] = true,
+    6    ["false"] = false,
+    6    ["null"] = nil,
+      }
+
+
+      local function next_char(str, idx, set, negate)
+  327    for i = idx, #str do
+  274       if set[str:sub(i, i)] ~= negate then
+  157          return i
+            end
+         end
+   53    return #str + 1
+      end
+
+
+      local function decode_error(str, idx, msg)
+   21    local line_count = 1
+   21    local col_count = 1
+   77    for i = 1, idx - 1 do
+   56       col_count = col_count + 1
+   56       if str:sub(i, i) == "\n" then
+****0          line_count = line_count + 1
+****0          col_count = 1
+            end
+         end
+   21    error(string.format("%s at line %d col %d", msg, line_count, col_count))
+      end
+
+
+      local function codepoint_to_utf8(n)
+
+    7    local f = math.floor
+    7    if n <= 0x7f then
+    3       return string.char(n)
+    4    elseif n <= 0x7ff then
+****0       return string.char(f(n / 64) + 192, n % 64 + 128)
+    4    elseif n <= 0xffff then
+    3       return string.char(f(n / 4096) + 224, f(n % 4096 / 64) + 128, n % 64 + 128)
+    1    elseif n <= 0x10ffff then
+    2       return string.char(f(n / 262144) + 240, f(n % 262144 / 4096) + 128,
+    2       f(n % 4096 / 64) + 128, n % 64 + 128)
+         end
+****0    error(string.format("invalid unicode codepoint '%x'", n))
+      end
+
+
+      local function parse_unicode_escape(s)
+    7    local n1 = tonumber(s:sub(1, 4), 16)
+    7    local n2 = tonumber(s:sub(7, 10), 16)
+
+    7    if n2 then
+    1       return codepoint_to_utf8((n1 - 0xd800) * 0x400 + (n2 - 0xdc00) + 0x10000)
+         else
+    6       return codepoint_to_utf8(n1)
+         end
+      end
+
+
+      local function parse_string(str, i)
+   38    local res = ""
+   38    local j = i + 1
+   38    local k = j
+
+  133    while j <= #str do
+  132       local x = str:byte(j)
+
+  132       if x < 32 then
+    2          decode_error(str, j, "control character in string")
+
+  130       elseif x == 92 then
+   26          res = res .. str:sub(k, j - 1)
+   26          j = j + 1
+   26          local c = str:sub(j, j)
+   26          if c == "u" then
+    9             local hex = str:match("^[dD][89aAbB]%x%x\\u%x%x%x%x", j + 1) or
+    8             str:match("^%x%x%x%x", j + 1) or
+    2             decode_error(str, j - 1, "invalid unicode escape in string")
+    7             res = res .. parse_unicode_escape(hex)
+    7             j = j + #hex
+               else
+   17             if not escape_chars[c] then
+    2                decode_error(str, j - 1, "invalid escape char '" .. c .. "' in string")
+                  end
+   15             res = res .. escape_char_map_inv[c]
+               end
+   22          k = j + 1
+
+  104       elseif x == 34 then
+   31          res = res .. str:sub(k, j - 1)
+   31          return res, j + 1
+            end
+
+   95       j = j + 1
+         end
+
+    1    decode_error(str, i, "expected closing quote for string")
+      end
+
+
+      local function parse_number(str, i)
+   30    local x = next_char(str, i, delim_chars)
+   30    local s = str:sub(i, x - 1)
+   30    local n = tonumber(s)
+   30    if not n then
+    1       decode_error(str, i, "invalid number '" .. s .. "'")
+         end
+   29    return n, x
+      end
+
+
+      local function parse_literal(str, i)
+    3    local x = next_char(str, i, delim_chars)
+    3    local word = str:sub(i, x - 1)
+    3    if not literals[word] then
+****0       decode_error(str, i, "invalid literal '" .. word .. "'")
+         end
+    3    return literal_map[word], x
+      end
+
+
+      local function parse_array(str, i)
+    7    local res = {}
+    7    local n = 1
+    7    i = i + 1
+****0    while 1 do
+   19       local x = {}
+   19       i = next_char(str, i, space_chars, true)
+
+   19       if str:sub(i, i) == "]" then
+    1          i = i + 1
+               break
+            end
+
+   18       x, i = parse(str, i)
+   16       res[n] = x
+   16       n = n + 1
+
+   16       i = next_char(str, i, space_chars, true)
+   16       local chr = str:sub(i, i)
+   16       i = i + 1
+   16       if chr == "]" then break end
+   12       if chr ~= "," then decode_error(str, i, "expected ']' or ','") end
+         end
+    5    return res, i
+      end
+
+
+      local function parse_object(str, i)
+   13    local res = {}
+   13    i = i + 1
+****0    while 1 do
+            local key
+            local val
+   18       i = next_char(str, i, space_chars, true)
+
+   18       if str:sub(i, i) == "}" then
+    2          i = i + 1
+               break
+            end
+
+   16       if str:sub(i, i) ~= '"' then
+    4          decode_error(str, i, "expected string for key")
+            end
+   12       key, i = parse(str, i)
+
+   12       i = next_char(str, i, space_chars, true)
+   12       if str:sub(i, i) ~= ":" then
+****0          decode_error(str, i, "expected ':' after key")
+            end
+   12       i = next_char(str, i + 1, space_chars, true)
+
+   12       val, i = parse(str, i)
+
+    9       res[key] = val
+
+    9       i = next_char(str, i, space_chars, true)
+    9       local chr = str:sub(i, i)
+    9       i = i + 1
+    9       if chr == "}" then break end
+    6       if chr ~= "," then decode_error(str, i, "expected '}' or ','") end
+         end
+    5    return res, i
+      end
+
+
+    6 local char_func_map = {
+    6    ['"'] = parse_string,
+    6    ["0"] = parse_number,
+    6    ["1"] = parse_number,
+    6    ["2"] = parse_number,
+    6    ["3"] = parse_number,
+    6    ["4"] = parse_number,
+    6    ["5"] = parse_number,
+    6    ["6"] = parse_number,
+    6    ["7"] = parse_number,
+    6    ["8"] = parse_number,
+    6    ["9"] = parse_number,
+    6    ["-"] = parse_number,
+    6    ["t"] = parse_literal,
+    6    ["f"] = parse_literal,
+    6    ["n"] = parse_literal,
+    6    ["["] = parse_array,
+    6    ["{"] = parse_object,
+      }
+
+      parse = function(str, idx)
+   97    local chr = str:sub(idx, idx)
+   97    local f = char_func_map[chr]
+   97    if f then
+   91       local tbl, newIdx = f(str, idx)
+   73       return tbl, newIdx
+         end
+    6    decode_error(str, idx, "unexpected character '" .. chr .. "'")
+      end
+
+    6 function json.decode(str)
+   55    if type(str) ~= "string" then
+****0       error("expected argument of type string, got " .. type(str))
+         end
+   55    local res, idx = parse(str, next_char(str, 1, space_chars, true))
+   36    idx = next_char(str, idx, space_chars, true)
+   36    if idx <= #str then
+    2       decode_error(str, idx, "trailing garbage")
+         end
+   34    return res
       end
 
 
@@ -54,7 +414,7 @@ build/synbio.lua
 
 
 
-    5 local fasta = {Fasta = {}, }
+    6 local fasta = {Fasta = {}, }
 
 
 
@@ -65,7 +425,7 @@ build/synbio.lua
 
 
 
-    5 function fasta.parse(input)
+    6 function fasta.parse(input)
     1    local output = {}
     1    local identifier = ""
     1    local sequence = ""
@@ -100,7 +460,7 @@ build/synbio.lua
 
 
 
-    5 local fastq = {Fastq = {}, }
+    6 local fastq = {Fastq = {}, }
 
 
 
@@ -112,7 +472,7 @@ build/synbio.lua
 
 
 
-    5 function fastq.parse(input)
+    6 function fastq.parse(input)
     1    local output = {}
     1    local identifier = ""
     1    local sequence = ""
@@ -155,7 +515,7 @@ build/synbio.lua
 
 
 
-    5 local primers = {thermodynamics = {}, }
+    6 local primers = {thermodynamics = {}, }
 
 
 
@@ -185,27 +545,27 @@ build/synbio.lua
 
 
 
-    5 primers.nearest_neighbors_thermodynamics = {
-    5    AA = { h = -7.6, s = -21.3 },
-    5    TT = { h = -7.6, s = -21.3 },
-    5    AT = { h = -7.2, s = -20.4 },
-    5    TA = { h = -7.2, s = -21.3 },
-    5    CA = { h = -8.5, s = -22.7 },
-    5    TG = { h = -8.5, s = -22.7 },
-    5    GT = { h = -8.4, s = -22.4 },
-    5    AC = { h = -8.4, s = -22.4 },
-    5    CT = { h = -7.8, s = -21.0 },
-    5    AG = { h = -7.8, s = -21.0 },
-    5    GA = { h = -8.2, s = -22.2 },
-    5    TC = { h = -8.2, s = -22.2 },
-    5    CG = { h = -10.6, s = -27.2 },
-    5    GC = { h = -9.8, s = -24.4 },
-    5    GG = { h = -8.0, s = -19.9 },
-    5    CC = { h = -8.0, s = -19.9 },
-    5 }
-    5 primers.initial_thermodynamic_penalty = { h = 0.2, s = -5.7 }
-    5 primers.symmetry_thermodynamic_penalty = { h = 0, s = -1.4 }
-    5 primers.terminal_at_thermodynamic_penalty = { h = 2.2, s = 6.9 }
+    6 primers.nearest_neighbors_thermodynamics = {
+    6    AA = { h = -7.6, s = -21.3 },
+    6    TT = { h = -7.6, s = -21.3 },
+    6    AT = { h = -7.2, s = -20.4 },
+    6    TA = { h = -7.2, s = -21.3 },
+    6    CA = { h = -8.5, s = -22.7 },
+    6    TG = { h = -8.5, s = -22.7 },
+    6    GT = { h = -8.4, s = -22.4 },
+    6    AC = { h = -8.4, s = -22.4 },
+    6    CT = { h = -7.8, s = -21.0 },
+    6    AG = { h = -7.8, s = -21.0 },
+    6    GA = { h = -8.2, s = -22.2 },
+    6    TC = { h = -8.2, s = -22.2 },
+    6    CG = { h = -10.6, s = -27.2 },
+    6    GC = { h = -9.8, s = -24.4 },
+    6    GG = { h = -8.0, s = -19.9 },
+    6    CC = { h = -8.0, s = -19.9 },
+    6 }
+    6 primers.initial_thermodynamic_penalty = { h = 0.2, s = -5.7 }
+    6 primers.symmetry_thermodynamic_penalty = { h = 0, s = -1.4 }
+    6 primers.terminal_at_thermodynamic_penalty = { h = 2.2, s = 6.9 }
 
 
 
@@ -214,7 +574,7 @@ build/synbio.lua
 
 
 
-    5 function primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
+    6 function primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
 
     5    local melting_temperature = 0
     5    local dH = 0
@@ -257,7 +617,7 @@ build/synbio.lua
 
 
 
-    5 function primers.marmur_doty(sequence)
+    6 function primers.marmur_doty(sequence)
     1    sequence = sequence:upper()
     1    local _, a_count = sequence:gsub("A", "")
     1    local _, t_count = sequence:gsub("T", "")
@@ -270,7 +630,7 @@ build/synbio.lua
 
 
 
-    5 function primers.melting_temp(sequence)
+    6 function primers.melting_temp(sequence)
     2    local primer_concentration = 0.000000500
     2    local salt_concentration = 0.050
     2    local magnesium_concentration = 0.0
@@ -285,7 +645,7 @@ build/synbio.lua
 
 
 
-    5 local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
+    6 local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
 
 
 
@@ -345,49 +705,52 @@ build/synbio.lua
 
 
 
-    5 genbank.GENBANK_MOLECULE_TYPES = {
-    5    "DNA",
-    5    "genomic DNA",
-    5    "genomic RNA",
-    5    "mRNA",
-    5    "tRNA",
-    5    "rRNA",
-    5    "other RNA",
-    5    "other DNA",
-    5    "transcribed RNA",
-    5    "viral cRNA",
-    5    "unassigned DNA",
+
+
+
+    6 genbank.GENBANK_MOLECULE_TYPES = {
+    6    "DNA",
+    6    "genomic DNA",
+    6    "genomic RNA",
+    6    "mRNA",
+    6    "tRNA",
+    6    "rRNA",
+    6    "other RNA",
+    6    "other DNA",
+    6    "transcribed RNA",
+    6    "viral cRNA",
+    6    "unassigned DNA",
          "unassigned RNA",
-    5 }
+    6 }
 
 
 
-    5 genbank.GENBANK_DIVISIONS = {
-    5    "PRI",
-    5    "ROD",
-    5    "MAM",
-    5    "VRT",
-    5    "INV",
-    5    "PLN",
-    5    "BCT",
-    5    "VRL",
-    5    "PHG",
-    5    "SYN",
-    5    "UNA",
-    5    "EST",
-    5    "PAT",
-    5    "STS",
-    5    "GSS",
-    5    "HTG",
-    5    "HTC",
+    6 genbank.GENBANK_DIVISIONS = {
+    6    "PRI",
+    6    "ROD",
+    6    "MAM",
+    6    "VRT",
+    6    "INV",
+    6    "PLN",
+    6    "BCT",
+    6    "VRL",
+    6    "PHG",
+    6    "SYN",
+    6    "UNA",
+    6    "EST",
+    6    "PAT",
+    6    "STS",
+    6    "GSS",
+    6    "HTG",
+    6    "HTC",
          "ENV",
-    5 }
+    6 }
 
 
 
 
 
-    5 function genbank.parse(input)
+    6 function genbank.parse(input)
 
          local function trim(s)
   357       return (s:gsub("^%s*(.-)%s*$", "%1"))
@@ -844,7 +1207,7 @@ build/synbio.lua
     1    return genbanks
       end
 
-    5 function genbank.feature_sequence(self, parent)
+    6 function genbank.feature_sequence(self, parent)
          local function get_location(location, sequence)
     1       local seq = ""
     1       if #location.sub_locations == 0 then
@@ -867,15 +1230,21 @@ build/synbio.lua
 
 
 
-    5 local codon = {Codon = {}, AminoAcid = {}, CodonTable = {}, }
 
+    6 function genbank.from_json(str)
+****0    return json.decode(str)
+      end
 
+    6 function genbank.to_json(self)
+****0    return json.encode(self)
+      end
 
 
 
 
 
 
+    6 local codon = {Codon = {}, AminoAcid = {}, CodonTable = {}, }
 
 
 
@@ -932,33 +1301,6 @@ build/synbio.lua
 
 
 
-    5 codon.CODON_TABLES = {
-    5    [1] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------" },
-    5    [2] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------" },
-    5    [3] = { "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------" },
-    5    [4] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--MM------**-------M------------MMMM---------------M------------" },
-    5    [5] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG", "---M------**--------------------MMMM---------------M------------" },
-    5    [6] = { "FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    5    [9] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
-    5    [10] = { "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
-    5    [11] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M------------MMMM---------------M------------" },
-    5    [12] = { "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
-    5    [13] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG", "---M------**----------------------MM---------------M------------" },
-    5    [14] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "-----------*-----------------------M----------------------------" },
-    5    [16] = { "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------*---*--------------------M----------------------------" },
-    5    [21] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
-    5    [22] = { "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "------*---*---*--------------------M----------------------------" },
-    5    [23] = { "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--*-------**--*-----------------M--M---------------M------------" },
-    5    [24] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M------**-------M---------------M---------------M------------" },
-    5    [25] = { "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**-----------------------M---------------M------------" },
-    5    [26] = { "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
-    5    [27] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    5    [28] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*--------------------M----------------------------" },
-    5    [29] = { "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    5    [30] = { "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    5    [31] = { "FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
-    5    [33] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------" },
-    5 }
 
 
 
@@ -966,7 +1308,42 @@ build/synbio.lua
 
 
 
-    5 function codon.ncbi_standard_to_codon_table(amino_acids, starts)
+
+    6 codon.CODON_TABLES = {
+    6    [1] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------" },
+    6    [2] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------" },
+    6    [3] = { "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------" },
+    6    [4] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--MM------**-------M------------MMMM---------------M------------" },
+    6    [5] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG", "---M------**--------------------MMMM---------------M------------" },
+    6    [6] = { "FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+    6    [9] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
+    6    [10] = { "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
+    6    [11] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M------------MMMM---------------M------------" },
+    6    [12] = { "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
+    6    [13] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG", "---M------**----------------------MM---------------M------------" },
+    6    [14] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "-----------*-----------------------M----------------------------" },
+    6    [16] = { "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------*---*--------------------M----------------------------" },
+    6    [21] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
+    6    [22] = { "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "------*---*---*--------------------M----------------------------" },
+    6    [23] = { "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--*-------**--*-----------------M--M---------------M------------" },
+    6    [24] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M------**-------M---------------M---------------M------------" },
+    6    [25] = { "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**-----------------------M---------------M------------" },
+    6    [26] = { "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
+    6    [27] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+    6    [28] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*--------------------M----------------------------" },
+    6    [29] = { "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+    6    [30] = { "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+    6    [31] = { "FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
+    6    [33] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------" },
+    6 }
+
+
+
+
+
+
+
+    6 function codon.ncbi_standard_to_codon_table(amino_acids, starts)
 ****0    local base1 = "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
 ****0    local base2 = "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
 ****0    local base3 = "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
@@ -1002,7 +1379,7 @@ build/synbio.lua
 
 
 
-    5 function codon.new_table(table_number)
+    6 function codon.new_table(table_number)
 ****0    return codon.ncbi_standard_to_codon_table(codon.CODON_TABLES[table_number][1], codon.CODON_TABLES[table_number][2])
       end
 
@@ -1036,7 +1413,7 @@ build/synbio.lua
 
 
 
-    5 local synbio = {}
+    6 local synbio = {}
 
 
 
@@ -1046,15 +1423,17 @@ build/synbio.lua
 
 
 
-    5 synbio.version = "0.0.1"
-    5 synbio.complement = complement
-    5 synbio.fasta = fasta
-    5 synbio.fastq = fastq
-    5 synbio.primers = primers
-    5 synbio.genbank = genbank
-    5 synbio.codon = codon
 
-    5 return synbio
+    6 synbio.version = "0.0.1"
+    6 synbio.complement = complement
+    6 synbio.fasta = fasta
+    6 synbio.fastq = fastq
+    6 synbio.primers = primers
+    6 synbio.genbank = genbank
+    6 synbio.codon = codon
+    6 synbio.json = json
+
+    6 return synbio
 
 ==============================================================================
 Summary
@@ -1062,6 +1441,6 @@ Summary
 
 File             Hits Missed Coverage
 -------------------------------------
-build/synbio.lua 427  75     85.06%
+build/synbio.lua 622  88     87.61%
 -------------------------------------
-Total            427  75     85.06%
+Total            622  88     87.61%
