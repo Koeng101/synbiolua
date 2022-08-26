@@ -6,7 +6,7 @@ GenBank is a flat text file format developed in the 1980s to annotate genetic
 sequences, and has since become the standard for sharing annotated genetic
 sequences.
 --]]---------------------------------------------------------------------------
-local complement = require("complement")
+global complement = require("complement")
 
 local record genbank
     record Locus
@@ -263,19 +263,18 @@ function genbank.parse(input: string): {genbank.Genbank}
             if head_string == "ORGANISM" then
                 local _, index = data_line:find("ORGANISM")
                 organism = trim(data_line:sub(index+1,-1))
-                goto cont
-            end
-            for _, taxonomy_data in ipairs(split(trim(data_line), "[^;]+")) do
-                local taxonomy_data_trimmed = trim(taxonomy_data)
-                -- Taxonomy ends with a ".", which we check for here
-                if taxonomy_data_trimmed:len() > 1 then
-                    if taxonomy_data_trimmed:sub(-1,-1) == "." then
-                        taxonomy_data_trimmed = taxonomy_data_trimmed:sub(1, -2)
+            else
+                for _, taxonomy_data in ipairs(split(trim(data_line), "[^;]+")) do
+                    local taxonomy_data_trimmed = trim(taxonomy_data)
+                    -- Taxonomy ends with a ".", which we check for here
+                    if taxonomy_data_trimmed:len() > 1 then
+                        if taxonomy_data_trimmed:sub(-1,-1) == "." then
+                            taxonomy_data_trimmed = taxonomy_data_trimmed:sub(1, -2)
+                        end
+                        taxonomy[#taxonomy+1] = taxonomy_data_trimmed
                     end
-                    taxonomy[#taxonomy+1] = taxonomy_data_trimmed
                 end
             end
-            ::cont::
         end
         return source, organism, taxonomy
     end
@@ -393,6 +392,7 @@ function genbank.parse(input: string): {genbank.Genbank}
     local copied_feature: genbank.Feature = {}
     local copied_genbank: genbank.Genbank = {}
     local i: integer = 0
+    local continue: boolean = false
 
     -- Iterate line by line
     for line in string.gmatch(input,'[^\r\n]+') do
@@ -409,11 +409,11 @@ function genbank.parse(input: string): {genbank.Genbank}
                 params.genbank.meta.locus = parse_locus(line)
                 params.genbank_started = true
             end
-            goto continue
+            continue = true
         end
 
         -- Parse metadata
-        if params.parse_step == "metadata" then
+        if params.parse_step == "metadata" and not continue then
             -- Handle empty lines
             if line:len() == 0 then
                 error("Empty metadata line on " .. i)
@@ -441,22 +441,26 @@ function genbank.parse(input: string): {genbank.Genbank}
                     params.feature.feature_type = trim(split_line[1])
                     params.feature.gbk_location_string = trim(split_line[#split_line])
                     params.new_location = true
-                    goto continue
+                    continue = true
                 else
-                    if params.metadata_tag ~= "" then
-                        params.genbank.meta.other[params.metadata_tag] = parse_metadata(params.metadata_data)
+                    if not continue then
+                        if params.metadata_tag ~= "" then
+                            params.genbank.meta.other[params.metadata_tag] = parse_metadata(params.metadata_data)
+                        end
                     end
                 end
-
-                params.metadata_tag = trim(split_line[1])
-                params.metadata_data = {trim(line:sub(params.metadata_tag:len()+1))}
+                if not continue then
+                    params.metadata_tag = trim(split_line[1])
+                    params.metadata_data = {trim(line:sub(params.metadata_tag:len()+1))}
+                end
             else
                 params.metadata_data[#params.metadata_data+1] = line
             end
         end
 
         -- Parse features
-        if params.parse_step == "features" then
+        if params.parse_step == "features" and not continue then
+            local trimmed_line: string
             -- Switch to sequence parsing
             if line:find("ORIGIN") then
                 params.parse_step = "sequence"
@@ -479,71 +483,73 @@ function genbank.parse(input: string): {genbank.Genbank}
 					feature.location = parse_location(feature.gbk_location_string) 
                     params.genbank.features[#params.genbank.features+1] = feature
                 end
-                goto continue
+                continue = true
+            else
+                -- check if current line contains anything but whitespace
+                trimmed_line = trim(line)
+                if trimmed_line:len() < 1 then
+                    continue = true
+                end
             end -- end sequence parsing logic
 
-            -- check if current line contains anything but whitespace
-            local trimmed_line: string = trim(line)
-            if trimmed_line:len() < 1 then
-                goto continue
-            end
+            if not continue then
+                -- determine if current line is a new top level feature
+                if count_leading_spaces(params.current_line) < count_leading_spaces(params.previous_line) or params.previous_line == "FEATURES" then
+                    -- save our completed attribute / qualifier to the current feature
+                    if params.attribute_value ~= "" then
+                        params.feature.attributes[params.attribute] = params.attribute_value
+                        copied_feature = deepcopy(params.feature) as genbank.Feature
+                        params.features[#params.features+1] = copied_feature 
+                        params.attribute_value = ""
+                        params.attribute = ""
+                        params.feature = {} 
+                        params.feature.attributes = {}
+                    end
 
-            -- determine if current line is a new top level feature
-            if count_leading_spaces(params.current_line) < count_leading_spaces(params.previous_line) or params.previous_line == "FEATURES" then
-                -- save our completed attribute / qualifier to the current feature
-                if params.attribute_value ~= "" then
-                    params.feature.attributes[params.attribute] = params.attribute_value
-                    copied_feature = deepcopy(params.feature) as genbank.Feature
-                    params.features[#params.features+1] = copied_feature 
+                    -- check for empty types
+                    if params.feature.feature_type ~= nil then
+                        copied_feature = deepcopy(params.feature) as genbank.Feature
+                        params.features[#params.features+1] = copied_feature
+                        params.feature = {}
+                        params.feature.attributes = {}
+                    end
+
+                    -- An initial feature line looks like this: `source          1..2686` with a type separated by its location
+                    if #split_line < 2 then
+                        error("Feature line malformed on line " .. i .. " . Got line: " .. line)
+                    end
+                    params.feature.feature_type = trim(split_line[1])
+                    params.feature.gbk_location_string = trim(split_line[#split_line])
+                    params.multi_line_feature = false -- without this we can't tell if something is a multiline feature or multiline qualifier
+
+                elseif not params.current_line:find("/") then -- current line is continuation of a feature or qualifier (sub-constituent of a feature)
+                    -- if it's a continuation of the current feature, add it to the location
+                    if not params.current_line:find("\"") and (count_leading_spaces(params.current_line) > count_leading_spaces(params.previous_line) or params.multi_line_feature) then
+                        params.feature.gbk_location_string = params.feature.gbk_location_string .. trim(line)
+                        params.multi_line_feature = true -- without this we can't tell if something is a multiline feature or multiline qualifier
+                    else
+                        local remove_attribute_value_quotes = trimmed_line:gsub("\"", "")
+                        params.attribute_value = params.attribute_value .. remove_attribute_value_quotes
+                    end
+                elseif params.current_line:find("/") then
+                    if params.attribute_value ~= "" then
+                        params.feature.attributes[params.attribute] = params.attribute_value
+                    end
                     params.attribute_value = ""
-                    params.attribute = ""
-                    params.feature = {} 
-                    params.feature.attributes = {}
-                end
+                    local split_attribute = split(line, "[^=]+")
+                    local trimmed_space_attribute = trim(split_attribute[1])
+                    local removed_forward_slash_attribute = trimmed_space_attribute:gsub("/", "")
 
-                -- check for empty types
-                if params.feature.feature_type ~= nil then
-                    copied_feature = deepcopy(params.feature) as genbank.Feature
-                    params.features[#params.features+1] = copied_feature
-                    params.feature = {}
-                    params.feature.attributes = {}
-                end
+                    params.attribute = removed_forward_slash_attribute
+                    params.attribute_value = split_attribute[2]:gsub("\"", "")
 
-                -- An initial feature line looks like this: `source          1..2686` with a type separated by its location
-                if #split_line < 2 then
-                    error("Feature line malformed on line " .. i .. " . Got line: " .. line)
+                    params.multi_line_feature = false
                 end
-                params.feature.feature_type = trim(split_line[1])
-                params.feature.gbk_location_string = trim(split_line[#split_line])
-                params.multi_line_feature = false -- without this we can't tell if something is a multiline feature or multiline qualifier
-
-            elseif not params.current_line:find("/") then -- current line is continuation of a feature or qualifier (sub-constituent of a feature)
-                -- if it's a continuation of the current feature, add it to the location
-                if not params.current_line:find("\"") and (count_leading_spaces(params.current_line) > count_leading_spaces(params.previous_line) or params.multi_line_feature) then
-                    params.feature.gbk_location_string = params.feature.gbk_location_string .. trim(line)
-                    params.multi_line_feature = true -- without this we can't tell if something is a multiline feature or multiline qualifier
-                else
-                    local remove_attribute_value_quotes = trimmed_line:gsub("\"", "")
-                    params.attribute_value = params.attribute_value .. remove_attribute_value_quotes
-                end
-            elseif params.current_line:find("/") then
-                if params.attribute_value ~= "" then
-                    params.feature.attributes[params.attribute] = params.attribute_value
-                end
-                params.attribute_value = ""
-                local split_attribute = split(line, "[^=]+")
-                local trimmed_space_attribute = trim(split_attribute[1])
-                local removed_forward_slash_attribute = trimmed_space_attribute:gsub("/", "")
-
-                params.attribute = removed_forward_slash_attribute
-                params.attribute_value = split_attribute[2]:gsub("\"", "")
-
-                params.multi_line_feature = false
             end
         end
 
         -- Parse sequence
-        if params.parse_step == "sequence" then
+        if params.parse_step == "sequence" and not continue then
             if #line < 2 then
                 error("Too short line found while parsing genbank sequence on line " .. i .. ". Got line: " .. line)
             elseif line:sub(1,3) == "//" then
@@ -555,7 +561,7 @@ function genbank.parse(input: string): {genbank.Genbank}
                 params.genbank.sequence = params.genbank.sequence .. line:gsub("[0-9]-[%s+]","")
             end
         end
-        ::continue::
+        continue = false
         i = i + 1
     end
     return genbanks
