@@ -1,4 +1,47 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string
+local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string
+
+
+
+local complement = {}
+
+
+
+
+
+complement.COMPLEMENTS = {
+   A = "T",
+   B = "V",
+   C = "G",
+   D = "H",
+   G = "C",
+   H = "D",
+   K = "M",
+   M = "K",
+   N = "N",
+   R = "Y",
+   S = "S",
+   T = "A",
+   U = "A",
+   V = "B",
+   W = "W",
+   Y = "R",
+}
+for k, v in pairs(complement.COMPLEMENTS) do
+   complement.COMPLEMENTS[k:lower()] = v:lower()
+end
+
+
+
+
+
+function complement.reverse_complement(sequence)
+   local s = ""
+   for i = 1, #sequence do
+      if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
+      s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
+   end
+   return s:reverse()
+end
 
 
 
@@ -6,7 +49,237 @@ local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 th
 
 
 
-local complement = require("complement")
+
+
+local fasta = {Fasta = {}, }
+
+
+
+
+
+
+
+
+
+
+function fasta.parse(input)
+   local output = {}
+   local identifier = ""
+   local sequence = ""
+   local start = true
+   for line in string.gmatch(input, '[^\r\n]+') do
+      local s = line:sub(1, 1)
+
+      if s == ">" then
+
+         if start then
+            identifier = line:sub(2, -1)
+            start = false
+         else
+            output[#output + 1] = { identifier = identifier, sequence = sequence }
+            identifier = ""
+            sequence = ""
+         end
+
+      elseif s ~= ">" and s ~= ";" then
+         sequence = sequence .. line:gsub("%s+", "")
+      end
+   end
+
+   output[#output + 1] = { identifier = identifier, sequence = sequence }
+   return output
+end
+
+
+
+
+
+
+
+
+local fastq = {Fastq = {}, }
+
+
+
+
+
+
+
+
+
+
+
+function fastq.parse(input)
+   local output = {}
+   local identifier = ""
+   local sequence = ""
+   local quality = ""
+   local quality_next = false
+   local start = true
+   for line in string.gmatch(input, '[^\r\n]+') do
+      local s = line:sub(1, 1)
+
+      if s == "@" then
+
+         if start then
+            identifier = line:sub(2, -1)
+            start = false
+         else
+            output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
+            identifier = ""
+            sequence = ""
+            quality = ""
+         end
+
+      elseif s ~= "@" then
+         if quality_next == true then
+            quality = line
+            quality_next = false
+         else
+            if s == "+" then
+               quality_next = true
+            else
+               sequence = sequence .. line:gsub("%s+", "")
+            end
+         end
+      end
+   end
+
+   output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
+   return output
+end
+
+
+
+
+local primers = {thermodynamics = {}, }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+primers.nearest_neighbors_thermodynamics = {
+   AA = { h = -7.6, s = -21.3 },
+   TT = { h = -7.6, s = -21.3 },
+   AT = { h = -7.2, s = -20.4 },
+   TA = { h = -7.2, s = -21.3 },
+   CA = { h = -8.5, s = -22.7 },
+   TG = { h = -8.5, s = -22.7 },
+   GT = { h = -8.4, s = -22.4 },
+   AC = { h = -8.4, s = -22.4 },
+   CT = { h = -7.8, s = -21.0 },
+   AG = { h = -7.8, s = -21.0 },
+   GA = { h = -8.2, s = -22.2 },
+   TC = { h = -8.2, s = -22.2 },
+   CG = { h = -10.6, s = -27.2 },
+   GC = { h = -9.8, s = -24.4 },
+   GG = { h = -8.0, s = -19.9 },
+   CC = { h = -8.0, s = -19.9 },
+}
+primers.initial_thermodynamic_penalty = { h = 0.2, s = -5.7 }
+primers.symmetry_thermodynamic_penalty = { h = 0, s = -1.4 }
+primers.terminal_at_thermodynamic_penalty = { h = 2.2, s = 6.9 }
+
+
+
+
+
+
+
+
+function primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
+
+   local melting_temperature = 0
+   local dH = 0
+   local dS = 0
+
+   sequence = sequence:upper()
+   local gas_constant = 1.9872
+   local symmetry_factor = 4
+
+
+   dH = dH + primers.initial_thermodynamic_penalty.h
+   dS = dS + primers.initial_thermodynamic_penalty.s
+
+   if sequence == complement.reverse_complement(sequence) then
+      dH = dH + primers.symmetry_thermodynamic_penalty.h
+      dS = dS + primers.symmetry_thermodynamic_penalty.s
+      symmetry_factor = 1
+   end
+
+   if sequence:sub(-1, -1) == "A" or sequence:sub(-1, -1) == "T" then
+      dH = dH + primers.terminal_at_thermodynamic_penalty.h
+      dS = dS + primers.terminal_at_thermodynamic_penalty.s
+   end
+
+   local salt_effect = salt_concentration + (magnesium_concentration * 140)
+   dS = dS + ((0.368 * (sequence:len() - 1)) * math.log(salt_effect))
+
+   for i = 1, sequence:len() - 1, 1 do
+      local dT = primers.nearest_neighbors_thermodynamics[sequence:sub(i, i + 1)]
+      dH = dH + dT.h
+      dS = dS + dT.s
+   end
+
+   melting_temperature = dH * 1000 / (dS + gas_constant * math.log(primer_concentration / symmetry_factor)) - 273.15
+   return melting_temperature
+end
+
+
+
+
+
+function primers.marmur_doty(sequence)
+   sequence = sequence:upper()
+   local _, a_count = sequence:gsub("A", "")
+   local _, t_count = sequence:gsub("T", "")
+   local _, g_count = sequence:gsub("G", "")
+   local _, c_count = sequence:gsub("C", "")
+   return 2 * (a_count + t_count) + 4 * (g_count + c_count) - 7.0
+end
+
+
+
+
+
+function primers.melting_temp(sequence)
+   local primer_concentration = 0.000000500
+   local salt_concentration = 0.050
+   local magnesium_concentration = 0.0
+   return primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
+end
+
+
+
+
+
+
+
+
 
 local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
 
@@ -579,4 +852,196 @@ function genbank.feature_sequence(self, parent)
    return get_location(self.location, parent.sequence)
 end
 
-return genbank
+
+
+
+
+
+local codon = {Codon = {}, AminoAcid = {}, CodonTable = {}, }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+codon.CODON_TABLES = {
+   [1] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------" },
+   [2] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------" },
+   [3] = { "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------" },
+   [4] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--MM------**-------M------------MMMM---------------M------------" },
+   [5] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG", "---M------**--------------------MMMM---------------M------------" },
+   [6] = { "FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+   [9] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
+   [10] = { "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
+   [11] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M------------MMMM---------------M------------" },
+   [12] = { "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
+   [13] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG", "---M------**----------------------MM---------------M------------" },
+   [14] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "-----------*-----------------------M----------------------------" },
+   [16] = { "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------*---*--------------------M----------------------------" },
+   [21] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
+   [22] = { "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "------*---*---*--------------------M----------------------------" },
+   [23] = { "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--*-------**--*-----------------M--M---------------M------------" },
+   [24] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M------**-------M---------------M---------------M------------" },
+   [25] = { "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**-----------------------M---------------M------------" },
+   [26] = { "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
+   [27] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+   [28] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*--------------------M----------------------------" },
+   [29] = { "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+   [30] = { "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+   [31] = { "FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
+   [33] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------" },
+}
+
+
+
+
+
+
+
+function codon.ncbi_standard_to_codon_table(amino_acids, starts)
+   local base1 = "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
+   local base2 = "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
+   local base3 = "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
+   local amino_acid_table = {}
+   local ct = {}
+   ct.start_codons = {}
+   for i = 1, #amino_acids do
+      local triplet = base1:sub(i, i) .. base2:sub(i, i) .. base3:sub(i, i)
+
+      if starts:sub(i, i) == "M" then
+         local start_codon
+         start_codon = { triplet = triplet, weight = 0 }
+         ct.start_codons[#ct.start_codons + 1] = start_codon
+      end
+
+      local amino_acid = amino_acids:sub(i, i)
+      if amino_acid_table[amino_acid] == nil then
+         amino_acid_table[amino_acid] = { { triplet = triplet, weight = 0 } }
+      else
+         amino_acid_table[amino_acid][#amino_acid_table[amino_acid] + 1] = { triplet = triplet, weight = 0 }
+      end
+   end
+
+
+   ct.amino_acids = {}
+   for amino_acid, codons in pairs(amino_acid_table) do
+      ct.amino_acids[#ct.amino_acids + 1] = { letter = amino_acid, codons = codons }
+   end
+   return ct
+end
+
+
+
+
+
+function codon.new_table(table_number)
+   return codon.ncbi_standard_to_codon_table(codon.CODON_TABLES[table_number][1], codon.CODON_TABLES[table_number][2])
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local synbio = {}
+
+
+
+
+
+
+
+
+
+synbio.version = "0.0.1"
+synbio.complement = complement
+synbio.fasta = fasta
+synbio.fastq = fastq
+synbio.primers = primers
+synbio.genbank = genbank
+synbio.codon = codon
+
+return synbio

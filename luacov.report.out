@@ -12,25 +12,25 @@ build/complement.lua
 
 
     3 complement.COMPLEMENTS = {
-         A = "T",
-         B = "V",
-         C = "G",
-         D = "H",
-         G = "C",
-         H = "D",
-         K = "M",
-         M = "K",
-         N = "N",
-         R = "Y",
-         S = "S",
-         T = "A",
-         U = "A",
-         V = "B",
-         W = "W",
-         Y = "R",
+    3    A = "T",
+    3    B = "V",
+    3    C = "G",
+    3    D = "H",
+    3    G = "C",
+    3    H = "D",
+    3    K = "M",
+    3    M = "K",
+    3    N = "N",
+    3    R = "Y",
+    3    S = "S",
+    3    T = "A",
+    3    U = "A",
+    3    V = "B",
+    3    W = "W",
+    3    Y = "R",
     3 }
-   60 for k, v in pairs(complement.COMPLEMENTS) do
-  171    complement.COMPLEMENTS[k:lower()] = v:lower()
+   69 for k, v in pairs(complement.COMPLEMENTS) do
+   66    complement.COMPLEMENTS[k:lower()] = v:lower()
       end
 
 
@@ -39,11 +39,11 @@ build/complement.lua
 
     3 function complement.reverse_complement(sequence)
     5    local s = ""
-  104    for i = 1, #sequence do
-  198       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
-  198       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
+   88    for i = 1, #sequence do
+   84       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
+   83       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
          end
-    5    return s:reverse()
+    4    return s:reverse()
       end
 
     3 return complement
@@ -75,13 +75,13 @@ build/fasta.lua
     1    local identifier = ""
     1    local sequence = ""
     1    local start = true
-    8    for line in string.gmatch(input, '[^\r\n]+') do
+    7    for line in string.gmatch(input, '[^\r\n]+') do
     6       local s = line:sub(1, 1)
 
     6       if s == ">" then
 
     2          if start then
-    2             identifier = line:sub(2, -1)
+    1             identifier = line:sub(2, -1)
     1             start = false
                else
     1             output[#output + 1] = { identifier = identifier, sequence = sequence }
@@ -129,13 +129,13 @@ build/fastq.lua
     1    local quality = ""
     1    local quality_next = false
     1    local start = true
-   10    for line in string.gmatch(input, '[^\r\n]+') do
+    9    for line in string.gmatch(input, '[^\r\n]+') do
     8       local s = line:sub(1, 1)
 
     8       if s == "@" then
 
     2          if start then
-    2             identifier = line:sub(2, -1)
+    1             identifier = line:sub(2, -1)
     1             start = false
                else
     1             output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
@@ -177,25 +177,7 @@ build/genbank.lua
 
     1 local complement = require("complement")
 
-    1 local genbank = {}
-
-    1 local Locus = {}
-
-
-
-
-
-
-
-    1 local Reference = {}
-
-
-
-
-
-
-
-    1 local Meta = {}
+    1 local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
 
 
 
@@ -210,24 +192,6 @@ build/genbank.lua
 
 
 
-    1 local Location = {}
-
-
-
-
-
-
-
-
-    1 local Feature = {}
-
-
-
-
-
-
-
-    1 local Genbank = {}
 
 
 
@@ -237,43 +201,79 @@ build/genbank.lua
 
 
 
-    1 local GENBANK_MOLECULE_TYPES = {
-         "DNA",
-         "genomic DNA",
-         "genomic RNA",
-         "mRNA",
-         "tRNA",
-         "rRNA",
-         "other RNA",
-         "other DNA",
-         "transcribed RNA",
-         "viral cRNA",
-         "unassigned DNA",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    1 genbank.GENBANK_MOLECULE_TYPES = {
+    1    "DNA",
+    1    "genomic DNA",
+    1    "genomic RNA",
+    1    "mRNA",
+    1    "tRNA",
+    1    "rRNA",
+    1    "other RNA",
+    1    "other DNA",
+    1    "transcribed RNA",
+    1    "viral cRNA",
+    1    "unassigned DNA",
          "unassigned RNA",
-      }
+    1 }
 
 
 
-    1 local GENBANK_DIVISIONS = {
-         "PRI",
-         "ROD",
-         "MAM",
-         "VRT",
-         "INV",
-         "PLN",
-         "BCT",
-         "VRL",
-         "PHG",
-         "SYN",
-         "UNA",
-         "EST",
-         "PAT",
-         "STS",
-         "GSS",
-         "HTG",
-         "HTC",
+    1 genbank.GENBANK_DIVISIONS = {
+    1    "PRI",
+    1    "ROD",
+    1    "MAM",
+    1    "VRT",
+    1    "INV",
+    1    "PLN",
+    1    "BCT",
+    1    "VRL",
+    1    "PHG",
+    1    "SYN",
+    1    "UNA",
+    1    "EST",
+    1    "PAT",
+    1    "STS",
+    1    "GSS",
+    1    "HTG",
+    1    "HTC",
          "ENV",
-      }
+    1 }
 
 
 
@@ -300,14 +300,14 @@ build/genbank.lua
   790       if type(obj) ~= 'table' then return obj end
   147       local obj_table = obj
   147       local res = setmetatable({}, getmetatable(obj))
- 1299       for k, v in pairs(obj_table) do res[deepcopy(k)] = deepcopy(v) end
+  531       for k, v in pairs(obj_table) do res[deepcopy(k)] = deepcopy(v) end
   147       return res
          end
 
     1    function count_leading_spaces(line)
   146       local i = 0
  2556       for idx = 1, #line do
- 5112          if line:sub(idx, idx) == " " then
+ 2556          if line:sub(idx, idx) == " " then
  2410             i = i + 1
                else
   146             return i
@@ -316,11 +316,11 @@ build/genbank.lua
          end
 
     1    function parse_locus(locus_string)
-    1       local locus = Locus
+    1       local locus = genbank.Locus
 
-    2       local locus_split = split(trim(locus_string))
+    1       local locus_split = split(trim(locus_string))
     1       local filtered_locus_split = {}
-    9       for i, _ in ipairs(locus_split) do
+    8       for i, _ in ipairs(locus_split) do
     7          if locus_split[i] ~= "" then
     7             filtered_locus_split[#filtered_locus_split + 1] = locus_split[i]
                end
@@ -331,7 +331,7 @@ build/genbank.lua
 
 
 
-   14       for _, genbank_molecule in ipairs(GENBANK_MOLECULE_TYPES) do
+   13       for _, genbank_molecule in ipairs(genbank.GENBANK_MOLECULE_TYPES) do
    12          if locus_string:find(genbank_molecule) then
     1             locus.molecule_type = genbank_molecule
                end
@@ -344,8 +344,8 @@ build/genbank.lua
             end
 
 
-   20       for _, genbank_division in ipairs(GENBANK_DIVISIONS) do
-  162          for i, locus_split_without_start in ipairs(locus_split) do
+   19       for _, genbank_division in ipairs(genbank.GENBANK_DIVISIONS) do
+  144          for i, locus_split_without_start in ipairs(locus_split) do
   126             if i > 2 then
    90                if locus_split_without_start:find(genbank_division) then
 ****0                   locus.genbank_division = genbank_division
@@ -356,7 +356,7 @@ build/genbank.lua
 
 
     1       local start_date, end_date = locus_string:find("%d%d.%a%a%a.%d%d%d%d")
-    2       locus.modification_date = locus_string:sub(start_date, end_date)
+    1       locus.modification_date = locus_string:sub(start_date, end_date)
 
     1       return locus
          end
@@ -369,10 +369,10 @@ build/genbank.lua
     5       if #metadata == 0 then
 ****0          return "."
             end
-   15       for _, data in ipairs(metadata) do
-   10          output_metadata = output_metadata .. trim(data) .. " "
+   10       for _, data in ipairs(metadata) do
+    5          output_metadata = output_metadata .. trim(data) .. " "
             end
-   10       output_metadata = output_metadata:sub(1, #output_metadata - 1)
+    5       output_metadata = output_metadata:sub(1, #output_metadata - 1)
     5       return output_metadata
          end
 
@@ -400,20 +400,20 @@ build/genbank.lua
 
     2       local range_index = metadata_data[1]:find("%(")
     2       if range_index ~= nil then
-    4          reference.range = metadata_data[1]:sub(range_index, -1)
+    2          reference.range = metadata_data[1]:sub(range_index, -1)
             end
 
-    6       local reference_key = split(trim(metadata_data[2]))[1]
-    6       local reference_value = trim(metadata_data[2]:sub(reference_key:len() + 3, -1))
+    2       local reference_key = split(trim(metadata_data[2]))[1]
+    2       local reference_value = trim(metadata_data[2]:sub(reference_key:len() + 3, -1))
 
 
     9       for index = 3, #metadata_data do
-   14          if metadata_data[index]:sub(4, 4) ~= " " then
+    7          if metadata_data[index]:sub(4, 4) ~= " " then
     5             add_key(reference, reference_key, reference_value)
-   20             reference_key = trim(split(trim(metadata_data[index]))[1])
-   20             reference_value = trim(metadata_data[index]:sub(reference_key:len() + 3, -1))
+    5             reference_key = trim(split(trim(metadata_data[index]))[1])
+    5             reference_value = trim(metadata_data[index]:sub(reference_key:len() + 3, -1))
                else
-    4             reference_value = reference_value .. " " .. trim(metadata_data[index])
+    2             reference_value = reference_value .. " " .. trim(metadata_data[index])
                end
             end
     2       add_key(reference, reference_key, reference_value)
@@ -428,11 +428,11 @@ build/genbank.lua
             local data_line
     2       for iterator = 2, #metadata_data do
     1          data_line = metadata_data[iterator]
-    3          local head_string = split(trim(data_line))[1]
+    1          local head_string = split(trim(data_line))[1]
     1          if head_string == "ORGANISM" then
     1             local _, index = data_line:find("ORGANISM")
-    3             organism = trim(data_line:sub(index + 1, -1))
-    1             goto cont
+    1             organism = trim(data_line:sub(index + 1, -1))
+****0             goto cont
                end
 ****0          for _, taxonomy_data in ipairs(split(trim(data_line), "[^;]+")) do
 ****0             local taxonomy_data_trimmed = trim(taxonomy_data)
@@ -536,19 +536,19 @@ build/genbank.lua
     2       params.new_location = true
     2       params.parse_step = "metadata"
     2       params.metadata_tag = ""
-    2       params.genbank = Genbank
+    2       params.genbank = genbank.Genbank
     2       params.genbank_started = false
 
 
     2       params.attribute_value = ""
-    2       params.feature = Feature
+    2       params.feature = genbank.Feature
     2       params.feature.attributes = {}
     2       params.features = {}
 
 
-    2       params.genbank = Genbank
-    2       params.genbank.meta = Meta
-    2       params.genbank.meta.locus = Locus
+    2       params.genbank = genbank.Genbank
+    2       params.genbank.meta = genbank.Meta
+    2       params.genbank.meta.locus = genbank.Locus
     2       params.genbank.meta.other = {}
     2       params.genbank.meta.references = {}
     2       params.genbank.features = {}
@@ -564,8 +564,8 @@ build/genbank.lua
     1    local i = 0
 
 
-  143    for line in string.gmatch(input, '[^\r\n]+') do
-  282       local split_line = split(trim(line))
+  142    for line in string.gmatch(input, '[^\r\n]+') do
+  141       local split_line = split(trim(line))
 
   141       local previous_line = params.current_line
   141       params.current_line = line
@@ -574,51 +574,51 @@ build/genbank.lua
 
   141       if not params.genbank_started then
     1          if line:find("LOCUS") then
-    2             params = params_init()
-    2             params.genbank.meta.locus = parse_locus(line)
+    1             params = params_init()
+    1             params.genbank.meta.locus = parse_locus(line)
     1             params.genbank_started = true
                end
-    1          goto continue
+****0          goto continue
             end
 
 
   140       if params.parse_step == "metadata" then
 
-   40          if line:len() == 0 then
+   20          if line:len() == 0 then
 ****0             error("Empty metadata line on " .. i)
                end
 
 
-   40          if line:sub(1, 1) ~= " " or params.metadata_tag == "FEATURES" then
+   20          if line:sub(1, 1) ~= " " or params.metadata_tag == "FEATURES" then
 
    10             if params.metadata_tag == "DEFINITION" then
-    2                params.genbank.meta.definition = parse_metadata(params.metadata_data)
+    1                params.genbank.meta.definition = parse_metadata(params.metadata_data)
     9             elseif params.metadata_tag == "ACCESSION" then
-    2                params.genbank.meta.accession = parse_metadata(params.metadata_data)
+    1                params.genbank.meta.accession = parse_metadata(params.metadata_data)
     8             elseif params.metadata_tag == "VERSION" then
-    2                params.genbank.meta.version = parse_metadata(params.metadata_data)
+    1                params.genbank.meta.version = parse_metadata(params.metadata_data)
     7             elseif params.metadata_tag == "KEYWORDS" then
-    2                params.genbank.meta.keywords = parse_metadata(params.metadata_data)
+    1                params.genbank.meta.keywords = parse_metadata(params.metadata_data)
     6             elseif params.metadata_tag == "SOURCE" then
-    2                params.genbank.meta.source, params.genbank.meta.organism, params.genbank.meta.taxonomy = get_source_organism(params.metadata_data)
+    1                params.genbank.meta.source, params.genbank.meta.organism, params.genbank.meta.taxonomy = get_source_organism(params.metadata_data)
     5             elseif params.metadata_tag == "REFERENCE" then
-    4                params.genbank.meta.references[#params.genbank.meta.references + 1] = parse_references(params.metadata_data)
+    2                params.genbank.meta.references[#params.genbank.meta.references + 1] = parse_references(params.metadata_data)
     3             elseif params.metadata_tag == "FEATURES" then
     1                params.parse_step = "features"
 
 
-    2                params.feature.feature_type = trim(split_line[1])
-    2                params.feature.gbk_location_string = trim(split_line[#split_line])
+    1                params.feature.feature_type = trim(split_line[1])
+    1                params.feature.gbk_location_string = trim(split_line[#split_line])
     1                params.new_location = true
-    1                goto continue
+****0                goto continue
                   else
     2                if params.metadata_tag ~= "" then
-    2                   params.genbank.meta.other[params.metadata_tag] = parse_metadata(params.metadata_data)
+    1                   params.genbank.meta.other[params.metadata_tag] = parse_metadata(params.metadata_data)
                      end
                   end
 
-   18             params.metadata_tag = trim(split_line[1])
-   36             params.metadata_data = { trim(line:sub(params.metadata_tag:len() + 1)) }
+    9             params.metadata_tag = trim(split_line[1])
+    9             params.metadata_data = { trim(line:sub(params.metadata_tag:len() + 1)) }
                else
    10             params.metadata_data[#params.metadata_data + 1] = line
                end
@@ -633,36 +633,36 @@ build/genbank.lua
 
     1             if params.attribute_value ~= nil then
     1                params.feature.attributes[params.attribute] = params.attribute_value
-    2                copied_feature = deepcopy(params.feature)
+    1                copied_feature = deepcopy(params.feature)
     1                params.features[#params.features + 1] = copied_feature
     1                params.attribute_value = ""
     1                params.attribute = ""
-    1                params.feature = Feature
+    1                params.feature = genbank.Feature
                   else
 ****0                copied_feature = deepcopy(params.feature)
 ****0                params.features[#params.features + 1] = copied_feature
                   end
 
 
-   23             for _, feature in ipairs(params.features) do
-   42                feature.location = parse_location(feature.gbk_location_string)
+   22             for _, feature in ipairs(params.features) do
+   21                feature.location = parse_location(feature.gbk_location_string)
    21                params.genbank.features[#params.genbank.features + 1] = feature
                   end
-    1             goto continue
-               end
-
-
-   73          local trimmed_line = trim(line)
-  146          if trimmed_line:len() < 1 then
 ****0             goto continue
                end
 
 
-  219          if count_leading_spaces(params.current_line) < count_leading_spaces(params.previous_line) or params.previous_line == "FEATURES" then
+   73          local trimmed_line = trim(line)
+   73          if trimmed_line:len() < 1 then
+****0             goto continue
+               end
+
+
+   73          if count_leading_spaces(params.current_line) < count_leading_spaces(params.previous_line) or params.previous_line == "FEATURES" then
 
    20             if params.attribute_value ~= "" then
    20                params.feature.attributes[params.attribute] = params.attribute_value
-   40                copied_feature = deepcopy(params.feature)
+   20                copied_feature = deepcopy(params.feature)
    20                params.features[#params.features + 1] = copied_feature
    20                params.attribute_value = ""
    20                params.attribute = ""
@@ -682,8 +682,8 @@ build/genbank.lua
    20             if #split_line < 2 then
 ****0                error("Feature line malformed on line " .. i .. " . Got line: " .. line)
                   end
-   40             params.feature.feature_type = trim(split_line[1])
-   40             params.feature.gbk_location_string = trim(split_line[#split_line])
+   20             params.feature.feature_type = trim(split_line[1])
+   20             params.feature.gbk_location_string = trim(split_line[#split_line])
    20             params.multi_line_feature = false
 
    53          elseif not params.current_line:find("/") then
@@ -715,8 +715,8 @@ build/genbank.lua
   138       if params.parse_step == "sequence" then
    46          if #line < 2 then
 ****0             error("Too short line found while parsing genbank sequence on line " .. i .. ". Got line: " .. line)
-   92          elseif line:sub(1, 3) == "//" then
-    2             copied_genbank = deepcopy(params.genbank)
+   46          elseif line:sub(1, 3) == "//" then
+    1             copied_genbank = deepcopy(params.genbank)
     1             genbanks[#genbanks + 1] = copied_genbank
     1             params.genbank_started = false
     1             params.genbank.sequence = ""
@@ -734,7 +734,7 @@ build/genbank.lua
     1    function get_location(location, sequence)
     1       local seq = ""
     1       if #location.sub_locations == 0 then
-    3          seq = sequence:sub(location.location_start, location.location_end):upper()
+    1          seq = sequence:sub(location.location_start, location.location_end):upper()
             else
 ****0          for _, sub_location in ipairs(location.sub_locations) do
 ****0             seq = seq .. get_location(sub_location, sequence)
@@ -747,6 +747,7 @@ build/genbank.lua
          end
     1    return get_location(self.location, parent.sequence)
       end
+
     1 return genbank
 
 ==============================================================================
@@ -821,7 +822,7 @@ build/primers.lua
     4    local dH = 0
     4    local dS = 0
 
-    8    sequence = sequence:upper()
+    4    sequence = sequence:upper()
     4    local gas_constant = 1.9872
     4    local symmetry_factor = 4
 
@@ -829,22 +830,22 @@ build/primers.lua
     4    dH = dH + primers.initial_thermodynamic_penalty.h
     4    dS = dS + primers.initial_thermodynamic_penalty.s
 
-    8    if sequence == complement.reverse_complement(sequence) then
+    4    if sequence == complement.reverse_complement(sequence) then
     1       dH = dH + primers.symmetry_thermodynamic_penalty.h
     1       dS = dS + primers.symmetry_thermodynamic_penalty.s
     1       symmetry_factor = 1
          end
 
-   11    if sequence:sub(-1, -1) == "A" or sequence:sub(-1, -1) == "T" then
+    4    if sequence:sub(-1, -1) == "A" or sequence:sub(-1, -1) == "T" then
     3       dH = dH + primers.terminal_at_thermodynamic_penalty.h
     3       dS = dS + primers.terminal_at_thermodynamic_penalty.s
          end
 
     4    local salt_effect = salt_concentration + (magnesium_concentration * 140)
-    8    dS = dS + ((0.368 * (sequence:len() - 1)) * math.log(salt_effect))
+    4    dS = dS + ((0.368 * (sequence:len() - 1)) * math.log(salt_effect))
 
-   71    for i = 1, sequence:len() - 1, 1 do
-  126       local dT = primers.nearest_neighbors_thermodynamics[sequence:sub(i, i + 1)]
+   67    for i = 1, sequence:len() - 1, 1 do
+   63       local dT = primers.nearest_neighbors_thermodynamics[sequence:sub(i, i + 1)]
    63       dH = dH + dT.h
    63       dS = dS + dT.s
          end
@@ -858,7 +859,7 @@ build/primers.lua
 
 
     1 function primers.marmur_doty(sequence)
-    2    sequence = sequence:upper()
+    1    sequence = sequence:upper()
     1    local _, a_count = sequence:gsub("A", "")
     1    local _, t_count = sequence:gsub("T", "")
     1    local _, g_count = sequence:gsub("G", "")
@@ -884,10 +885,10 @@ Summary
 
 File                 Hits Missed Coverage
 -----------------------------------------
-build/complement.lua 13   0      100.00%
+build/complement.lua 29   0      100.00%
 build/fasta.lua      21   0      100.00%
 build/fastq.lua      29   0      100.00%
-build/genbank.lua    242  57     80.94%
+build/genbank.lua    262  61     81.11%
 build/primers.lua    61   0      100.00%
 -----------------------------------------
-Total                366  57     86.52%
+Total                402  61     86.83%
