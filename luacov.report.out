@@ -29,8 +29,8 @@ build/synbio.lua
     5    W = "W",
     5    Y = "R",
     5 }
-  125 for k, v in pairs(complement.COMPLEMENTS) do
-  120    complement.COMPLEMENTS[k:lower()] = v:lower()
+   45 for k, v in pairs(complement.COMPLEMENTS) do
+   40    complement.COMPLEMENTS[k:lower()] = v:lower()
       end
 
 
@@ -39,11 +39,11 @@ build/synbio.lua
 
     5 function complement.reverse_complement(sequence)
     5    local s = ""
-  104    for i = 1, #sequence do
-   99       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
-   99       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
+   88    for i = 1, #sequence do
+   84       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
+   83       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
          end
-    5    return s:reverse()
+    4    return s:reverse()
       end
 
 
@@ -539,19 +539,18 @@ build/synbio.lua
     1          if head_string == "ORGANISM" then
     1             local _, index = data_line:find("ORGANISM")
     1             organism = trim(data_line:sub(index + 1, -1))
-****0             goto cont
-               end
-****0          for _, taxonomy_data in ipairs(split(trim(data_line), "[^;]+")) do
-****0             local taxonomy_data_trimmed = trim(taxonomy_data)
+               else
+****0             for _, taxonomy_data in ipairs(split(trim(data_line), "[^;]+")) do
+****0                local taxonomy_data_trimmed = trim(taxonomy_data)
 
-****0             if taxonomy_data_trimmed:len() > 1 then
-****0                if taxonomy_data_trimmed:sub(-1, -1) == "." then
-****0                   taxonomy_data_trimmed = taxonomy_data_trimmed:sub(1, -2)
+****0                if taxonomy_data_trimmed:len() > 1 then
+****0                   if taxonomy_data_trimmed:sub(-1, -1) == "." then
+****0                      taxonomy_data_trimmed = taxonomy_data_trimmed:sub(1, -2)
+                        end
+****0                   taxonomy[#taxonomy + 1] = taxonomy_data_trimmed
                      end
-****0                taxonomy[#taxonomy + 1] = taxonomy_data_trimmed
                   end
                end
-****0          ::cont::
             end
     1       return source, organism, taxonomy
          end
@@ -669,6 +668,7 @@ build/synbio.lua
     1    local copied_feature = {}
     1    local copied_genbank = {}
     1    local i = 0
+    1    local continue = false
 
 
   142    for line in string.gmatch(input, '[^\r\n]+') do
@@ -685,11 +685,11 @@ build/synbio.lua
     1             params.genbank.meta.locus = parse_locus(line)
     1             params.genbank_started = true
                end
-****0          goto continue
+    1          continue = true
             end
 
 
-  140       if params.parse_step == "metadata" then
+  141       if params.parse_step == "metadata" and not continue then
 
    20          if line:len() == 0 then
 ****0             error("Empty metadata line on " .. i)
@@ -717,22 +717,26 @@ build/synbio.lua
     1                params.feature.feature_type = trim(split_line[1])
     1                params.feature.gbk_location_string = trim(split_line[#split_line])
     1                params.new_location = true
-****0                goto continue
+    1                continue = true
                   else
-    2                if params.metadata_tag ~= "" then
-    1                   params.genbank.meta.other[params.metadata_tag] = parse_metadata(params.metadata_data)
+    2                if not continue then
+    2                   if params.metadata_tag ~= "" then
+    1                      params.genbank.meta.other[params.metadata_tag] = parse_metadata(params.metadata_data)
+                        end
                      end
                   end
-
-    9             params.metadata_tag = trim(split_line[1])
-    9             params.metadata_data = { trim(line:sub(params.metadata_tag:len() + 1)) }
+   10             if not continue then
+    9                params.metadata_tag = trim(split_line[1])
+    9                params.metadata_data = { trim(line:sub(params.metadata_tag:len() + 1)) }
+                  end
                else
    10             params.metadata_data[#params.metadata_data + 1] = line
                end
             end
 
 
-  139       if params.parse_step == "features" then
+  141       if params.parse_step == "features" and not continue then
+               local trimmed_line
 
    74          if line:find("ORIGIN") then
     1             params.parse_step = "sequence"
@@ -755,71 +759,73 @@ build/synbio.lua
    21                feature.location = parse_location(feature.gbk_location_string)
    21                params.genbank.features[#params.genbank.features + 1] = feature
                   end
-****0             goto continue
+    1             continue = true
+               else
+
+   73             trimmed_line = trim(line)
+   73             if trimmed_line:len() < 1 then
+****0                continue = true
+                  end
                end
 
+   74          if not continue then
 
-   73          local trimmed_line = trim(line)
-   73          if trimmed_line:len() < 1 then
-****0             goto continue
-               end
+   73             if count_leading_spaces(params.current_line) < count_leading_spaces(params.previous_line) or params.previous_line == "FEATURES" then
+
+   20                if params.attribute_value ~= "" then
+   20                   params.feature.attributes[params.attribute] = params.attribute_value
+   20                   copied_feature = deepcopy(params.feature)
+   20                   params.features[#params.features + 1] = copied_feature
+   20                   params.attribute_value = ""
+   20                   params.attribute = ""
+   20                   params.feature = {}
+   20                   params.feature.attributes = {}
+                     end
 
 
-   73          if count_leading_spaces(params.current_line) < count_leading_spaces(params.previous_line) or params.previous_line == "FEATURES" then
+   20                if params.feature.feature_type ~= nil then
+****0                   copied_feature = deepcopy(params.feature)
+****0                   params.features[#params.features + 1] = copied_feature
+****0                   params.feature = {}
+****0                   params.feature.attributes = {}
+                     end
 
-   20             if params.attribute_value ~= "" then
-   20                params.feature.attributes[params.attribute] = params.attribute_value
-   20                copied_feature = deepcopy(params.feature)
-   20                params.features[#params.features + 1] = copied_feature
-   20                params.attribute_value = ""
-   20                params.attribute = ""
-   20                params.feature = {}
-   20                params.feature.attributes = {}
+
+   20                if #split_line < 2 then
+****0                   error("Feature line malformed on line " .. i .. " . Got line: " .. line)
+                     end
+   20                params.feature.feature_type = trim(split_line[1])
+   20                params.feature.gbk_location_string = trim(split_line[#split_line])
+   20                params.multi_line_feature = false
+
+   53             elseif not params.current_line:find("/") then
+
+****0                if not params.current_line:find("\"") and (count_leading_spaces(params.current_line) > count_leading_spaces(params.previous_line) or params.multi_line_feature) then
+****0                   params.feature.gbk_location_string = params.feature.gbk_location_string .. trim(line)
+****0                   params.multi_line_feature = true
+                     else
+****0                   local remove_attribute_value_quotes = trimmed_line:gsub("\"", "")
+****0                   params.attribute_value = params.attribute_value .. remove_attribute_value_quotes
+                     end
+   53             elseif params.current_line:find("/") then
+   53                if params.attribute_value ~= "" then
+   32                   params.feature.attributes[params.attribute] = params.attribute_value
+                     end
+   53                params.attribute_value = ""
+   53                local split_attribute = split(line, "[^=]+")
+   53                local trimmed_space_attribute = trim(split_attribute[1])
+   53                local removed_forward_slash_attribute = trimmed_space_attribute:gsub("/", "")
+
+   53                params.attribute = removed_forward_slash_attribute
+   53                params.attribute_value = split_attribute[2]:gsub("\"", "")
+
+   53                params.multi_line_feature = false
                   end
-
-
-   20             if params.feature.feature_type ~= nil then
-****0                copied_feature = deepcopy(params.feature)
-****0                params.features[#params.features + 1] = copied_feature
-****0                params.feature = {}
-****0                params.feature.attributes = {}
-                  end
-
-
-   20             if #split_line < 2 then
-****0                error("Feature line malformed on line " .. i .. " . Got line: " .. line)
-                  end
-   20             params.feature.feature_type = trim(split_line[1])
-   20             params.feature.gbk_location_string = trim(split_line[#split_line])
-   20             params.multi_line_feature = false
-
-   53          elseif not params.current_line:find("/") then
-
-****0             if not params.current_line:find("\"") and (count_leading_spaces(params.current_line) > count_leading_spaces(params.previous_line) or params.multi_line_feature) then
-****0                params.feature.gbk_location_string = params.feature.gbk_location_string .. trim(line)
-****0                params.multi_line_feature = true
-                  else
-****0                local remove_attribute_value_quotes = trimmed_line:gsub("\"", "")
-****0                params.attribute_value = params.attribute_value .. remove_attribute_value_quotes
-                  end
-   53          elseif params.current_line:find("/") then
-   53             if params.attribute_value ~= "" then
-   32                params.feature.attributes[params.attribute] = params.attribute_value
-                  end
-   53             params.attribute_value = ""
-   53             local split_attribute = split(line, "[^=]+")
-   53             local trimmed_space_attribute = trim(split_attribute[1])
-   53             local removed_forward_slash_attribute = trimmed_space_attribute:gsub("/", "")
-
-   53             params.attribute = removed_forward_slash_attribute
-   53             params.attribute_value = split_attribute[2]:gsub("\"", "")
-
-   53             params.multi_line_feature = false
                end
             end
 
 
-  138       if params.parse_step == "sequence" then
+  141       if params.parse_step == "sequence" and not continue then
    46          if #line < 2 then
 ****0             error("Too short line found while parsing genbank sequence on line " .. i .. ". Got line: " .. line)
    46          elseif line:sub(1, 3) == "//" then
@@ -831,7 +837,7 @@ build/synbio.lua
    45             params.genbank.sequence = params.genbank.sequence .. line:gsub("[0-9]-[%s+]", "")
                end
             end
-****0       ::continue::
+  141       continue = false
   141       i = i + 1
          end
     1    return genbanks
@@ -1055,6 +1061,6 @@ Summary
 
 File             Hits Missed Coverage
 -------------------------------------
-build/synbio.lua 418  81     83.77%
+build/synbio.lua 426  75     85.03%
 -------------------------------------
-Total            418  81     83.77%
+Total            426  75     85.03%
