@@ -8,67 +8,67 @@ sequences.
 --]]---------------------------------------------------------------------------
 local complement = require("complement")
 
-local genbank = {}
-
-local record Locus
-    name: string
-    molecule_type: string
-    genbank_division: string
-    modification_date: string
-    sequence_coding: string
-    circular: boolean
+local record genbank
+    record Locus
+        name: string
+        molecule_type: string
+        genbank_division: string
+        modification_date: string
+        sequence_coding: string
+        circular: boolean
+    end
+    record Reference
+        authors: string
+        title: string
+        journal: string
+        pubmed: string
+        remark: string
+        range: string
+    end
+    record Meta
+        date: string
+        definition: string
+        accession: string
+        version: string
+        keywords: string
+        organism: string
+        source: string
+        taxonomy: {string}
+        origin: string
+        locus: Locus
+        references: {Reference}
+        other: {string:string}
+        name: string
+    end
+    record Location
+        location_start: number -- integer
+        location_end: number -- integer
+        complement: boolean
+        join: boolean
+        five_prime_partial: boolean
+        three_prime_partial: boolean
+        sub_locations: {Location}
+    end
+    record Feature
+        feature_type: string
+        description: string
+        attributes: {string:string}
+        gbk_location_string: string
+        location: Location
+        sequence: function(Genbank): string
+    end
+    record Genbank
+        meta: Meta
+        features: {Feature}
+        sequence: string
+    end
+    GENBANK_MOLECULE_TYPES: {string}
+    GENBANK_DIVISIONS: {string}
 end
-local record Reference
-    authors: string
-    title: string
-    journal: string
-    pubmed: string
-    remark: string
-    range: string
-end
-local record Meta
-      date: string
-      definition: string
-      accession: string
-      version: string
-      keywords: string
-      organism: string
-      source: string
-      taxonomy: {string}
-      origin: string
-      locus: Locus
-      references: {Reference}
-      other: {string:string}
-      name: string
-end
-local record Location
-    location_start: number -- integer
-    location_end: number -- integer
-    complement: boolean
-    join: boolean
-    five_prime_partial: boolean
-    three_prime_partial: boolean
-    sub_locations: {Location}
-end
-local record Feature
-    feature_type: string
-    description: string
-    attributes: {string:string}
-    gbk_location_string: string
-    location: Location
-	sequence: function(Genbank): string
-end
-local record Genbank
-    meta: Meta
-    features: {Feature}
-    sequence: string
-end
-
-
 
 --- Genbank molecule types; mirrors poly's genbank parser.
--- @table GENBANK_MOLECULE_TYPES
-local GENBANK_MOLECULE_TYPES = {
+-- @table genbank.GENBANK_MOLECULE_TYPES
+genbank.GENBANK_MOLECULE_TYPES = {
         "DNA",
         "genomic DNA",
         "genomic RNA",
@@ -84,8 +84,8 @@ local GENBANK_MOLECULE_TYPES = {
 }
 
 --- Genbank divisions; mirrors poly's genbank parser.
--- @table GENBANK_DIVISIONS
-local GENBANK_DIVISIONS = {
+-- @table genbank.GENBANK_DIVISIONS
+genbank.GENBANK_DIVISIONS = {
         "PRI", --primate sequences
         "ROD", --rodent sequences
         "MAM", --other mamallian sequences
@@ -110,7 +110,7 @@ local GENBANK_DIVISIONS = {
 -- @param input the input genbank string
 -- @return a list of genbank tables
 -- @usage local plasmids = genbank.parse(plasmids_gbk_string)
-function genbank.parse(input: string): {Genbank}
+function genbank.parse(input: string): {genbank.Genbank}
     -- Start helper functions
     function trim(s: string): string -- from PiL2 20.4
         return (s:gsub("^%s*(.-)%s*$", "%1"))
@@ -146,8 +146,8 @@ function genbank.parse(input: string): {Genbank}
         end
     end
     
-    function parse_locus(locus_string: string): Locus
-        local locus = Locus
+    function parse_locus(locus_string: string): genbank.Locus
+        local locus = genbank.Locus
     
         local locus_split = split(trim(locus_string))
         local filtered_locus_split: {string} = {}
@@ -162,7 +162,7 @@ function genbank.parse(input: string): {Genbank}
         -- We do not trust the locus sequence length, so it is not included.
 
         -- get molecule type
-        for _, genbank_molecule in ipairs(GENBANK_MOLECULE_TYPES) do
+        for _, genbank_molecule in ipairs(genbank.GENBANK_MOLECULE_TYPES) do
             if locus_string:find(genbank_molecule) then
                 locus.molecule_type = genbank_molecule
             end
@@ -175,7 +175,7 @@ function genbank.parse(input: string): {Genbank}
         end
 
         -- genbank division
-        for _, genbank_division in ipairs(GENBANK_DIVISIONS) do
+        for _, genbank_division in ipairs(genbank.GENBANK_DIVISIONS) do
             for i, locus_split_without_start in ipairs(locus_split) do
                 if i > 2 then
                     if locus_split_without_start:find(genbank_division) then
@@ -207,8 +207,8 @@ function genbank.parse(input: string): {Genbank}
         return output_metadata
     end
     
-    function parse_references(metadata_data: {string}): Reference
-        function add_key(reference: Reference, reference_key: string, reference_value: string): nil
+    function parse_references(metadata_data: {string}): genbank.Reference
+        function add_key(reference: genbank.Reference, reference_key: string, reference_value: string): nil
             -- TODO improve seed using table lookup
             if reference_key == "AUTHORS" then
                 reference.authors = reference_value
@@ -224,7 +224,7 @@ function genbank.parse(input: string): {Genbank}
                 error("Reference_key not in  [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK]. Got: " .. reference_key)
             end
         end
-        local reference: Reference = {}
+        local reference: genbank.Reference = {}
         if #metadata_data == 1 then
             error("Got reference with no additional information")
         end
@@ -280,8 +280,8 @@ function genbank.parse(input: string): {Genbank}
         return source, organism, taxonomy
     end
 
-    function parse_location(s: string): Location
-        local location: Location = {}
+    function parse_location(s: string): genbank.Location
+        local location: genbank.Location = {}
 		location.sub_locations = {}
         if not s:find("%(") then
             if not s:find("%.") then
@@ -352,9 +352,9 @@ function genbank.parse(input: string): {Genbank}
         attribute: string
         attribute_value: string
         parse_step: string
-        genbank: Genbank
-        feature: Feature
-        features: {Feature}
+        genbank: genbank.Genbank
+        feature: genbank.Feature
+        features: {genbank.Feature}
         metadata_tag: string
         metadata_data: {string}
         genbank_started: boolean
@@ -367,19 +367,19 @@ function genbank.parse(input: string): {Genbank}
         params.new_location = true
         params.parse_step = "metadata"
         params.metadata_tag = ""
-        params.genbank = Genbank
+        params.genbank = genbank.Genbank
         params.genbank_started = false
 
         -- Init features
         params.attribute_value = ""
-        params.feature = Feature
+        params.feature = genbank.Feature
         params.feature.attributes = {}
         params.features = {}
 
         -- Init Genbank
-        params.genbank = Genbank
-        params.genbank.meta = Meta
-        params.genbank.meta.locus = Locus
+        params.genbank = genbank.Genbank
+        params.genbank.meta = genbank.Meta
+        params.genbank.meta.locus = genbank.Locus
         params.genbank.meta.other = {}
         params.genbank.meta.references = {}
         params.genbank.features = {}
@@ -389,9 +389,9 @@ function genbank.parse(input: string): {Genbank}
     local params: ParseParameters = params_init()
 
     -- Setup basic parse parameters
-    local genbanks: {Genbank} = {}
-    local copied_feature: Feature = {}
-    local copied_genbank: Genbank = {}
+    local genbanks: {genbank.Genbank} = {}
+    local copied_feature: genbank.Feature = {}
+    local copied_genbank: genbank.Genbank = {}
     local i: integer = 0
 
     -- Iterate line by line
@@ -464,13 +464,13 @@ function genbank.parse(input: string): {Genbank}
                 -- save our completed attribute / qualifier string to the current feature
                 if params.attribute_value ~= nil then
                     params.feature.attributes[params.attribute] = params.attribute_value
-                    copied_feature = deepcopy(params.feature) as Feature
+                    copied_feature = deepcopy(params.feature) as genbank.Feature
                     params.features[#params.features+1] = copied_feature
                     params.attribute_value = ""
                     params.attribute = ""
-                    params.feature = Feature
+                    params.feature = genbank.Feature
                 else
-                    copied_feature = deepcopy(params.feature) as Feature
+                    copied_feature = deepcopy(params.feature) as genbank.Feature
                     params.features[#params.features+1] = copied_feature
                 end
 
@@ -493,7 +493,7 @@ function genbank.parse(input: string): {Genbank}
                 -- save our completed attribute / qualifier to the current feature
                 if params.attribute_value ~= "" then
                     params.feature.attributes[params.attribute] = params.attribute_value
-                    copied_feature = deepcopy(params.feature) as Feature
+                    copied_feature = deepcopy(params.feature) as genbank.Feature
                     params.features[#params.features+1] = copied_feature 
                     params.attribute_value = ""
                     params.attribute = ""
@@ -503,7 +503,7 @@ function genbank.parse(input: string): {Genbank}
 
                 -- check for empty types
                 if params.feature.feature_type ~= nil then
-                    copied_feature = deepcopy(params.feature) as Feature
+                    copied_feature = deepcopy(params.feature) as genbank.Feature
                     params.features[#params.features+1] = copied_feature
                     params.feature = {}
                     params.feature.attributes = {}
@@ -547,7 +547,7 @@ function genbank.parse(input: string): {Genbank}
             if #line < 2 then
                 error("Too short line found while parsing genbank sequence on line " .. i .. ". Got line: " .. line)
             elseif line:sub(1,3) == "//" then
-                copied_genbank = deepcopy(params.genbank) as Genbank
+                copied_genbank = deepcopy(params.genbank) as genbank.Genbank
                 genbanks[#genbanks+1] = copied_genbank
                 params.genbank_started = false
                 params.genbank.sequence = ""
@@ -561,8 +561,8 @@ function genbank.parse(input: string): {Genbank}
     return genbanks
 end
 
-function genbank.feature_sequence(self: Feature, parent: Genbank): string
-	function get_location(location: Location, sequence: string): string
+function genbank.feature_sequence(self: genbank.Feature, parent: genbank.Genbank): string
+	function get_location(location: genbank.Location, sequence: string): string
 		local seq = ""
 		if #location.sub_locations == 0 then
 			seq = sequence:sub(location.location_start, location.location_end):upper()
@@ -578,4 +578,5 @@ function genbank.feature_sequence(self: Feature, parent: Genbank): string
 	end
 	return get_location(self.location, parent.sequence)
 end
+
 return genbank

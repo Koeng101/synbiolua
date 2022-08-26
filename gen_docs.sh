@@ -1,4 +1,3 @@
-rm -rf docs
 mkdir tmp
 find . -name "*.tl" | xargs cp -t tmp/
 cd tmp

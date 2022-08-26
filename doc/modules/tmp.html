@@ -1,0 +1,720 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><a href="../modules/codon.html">codon</a></li>
+  <li><a href="../modules/complement.html">complement</a></li>
+  <li><a href="../modules/fasta.html">fasta</a></li>
+  <li><a href="../modules/fastq.html">fastq</a></li>
+  <li><a href="../modules/genbank.html">genbank</a></li>
+  <li><a href="../modules/primers.html">primers</a></li>
+  <li><strong>tmp</strong></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>tmp</code></h1>
+<p>The complement module provides functions for getting the reverse complement
+of a given DNA sequence.</p>
+<p></p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#complement.reverse_complement">complement.reverse_complement (sequence)</a></td>
+	<td class="summary">Returns reverse complement of a sequence, returns empty string if unknown character.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#fasta.parse">fasta.parse (input)</a></td>
+	<td class="summary">Parses a given FASTA string into a list of FASTA tables.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#fastq.parse">fastq.parse (input)</a></td>
+	<td class="summary">Parses a given FASTQ string into a list of FASTQ tables.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#primers.santa_lucia">primers.santa_lucia (sequence, primer_concentration, salt_concentration, magnesium_concentration)</a></td>
+	<td class="summary">Returns the melting temperature of a primer given primer concentration, salt concentration, and magnesium concentration</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#primers.marmur_doty">primers.marmur_doty (sequence)</a></td>
+	<td class="summary">Returns the melting temperature of an extremely short DNA sequence (<15bp)</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#primers.melting_temp">primers.melting_temp (sequence)</a></td>
+	<td class="summary">Returns the melting temperature using Santa Lucia with reasonable defaults</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#genbank.parse">genbank.parse (input)</a></td>
+	<td class="summary">Parses a given genbank string into a list of genbank tables</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#codon.ncbi_standard_to_codon_table">codon.ncbi_standard_to_codon_table (amino_acids, starts)</a></td>
+	<td class="summary">Generates a codon table from a list of amino acids and a list of start codons, given in the standard NCBI codon table format.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#codon.new_table">codon.new_table (table_number)</a></td>
+	<td class="summary">Generates a new codon table given an NCBI codon table number.</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#COMPLEMENTS">COMPLEMENTS</a></td>
+	<td class="summary">complement.COMPLEMENTS are DNA base complements.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#genbank.GENBANK_MOLECULE_TYPES">genbank.GENBANK_MOLECULE_TYPES</a></td>
+	<td class="summary">Genbank molecule types; mirrors poly's genbank parser.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#genbank.GENBANK_DIVISIONS">genbank.GENBANK_DIVISIONS</a></td>
+	<td class="summary">Genbank divisions; mirrors poly's genbank parser.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CODON_TABLES">CODON_TABLES</a></td>
+	<td class="summary">codon.CODON_TABLES are current NCBI sanctioned codon tables with their respective numbers.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "complement.reverse_complement"></a>
+    <strong>complement.reverse_complement (sequence)</strong>
+    </dt>
+    <dd>
+    Returns reverse complement of a sequence, returns empty string if unknown character.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">sequence</span>
+         the sequence to reverse complement
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        the reverse complement
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> s = complement.reverse_complement(<span class="string">"ATGC"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "fasta.parse"></a>
+    <strong>fasta.parse (input)</strong>
+    </dt>
+    <dd>
+    Parses a given FASTA string into a list of FASTA tables.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">input</span>
+         the input FASTA string
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        a list of FASTA tables, each containing an identifier and a sequence.
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> fastas = fasta.parse(<span class="string">"&gt;test\natgtaa"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "fastq.parse"></a>
+    <strong>fastq.parse (input)</strong>
+    </dt>
+    <dd>
+    Parses a given FASTQ string into a list of FASTQ tables.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">input</span>
+         the input FASTQ string
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        a list of FASTQ tables, each containing an identifier, a sequence, and a quality score.
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> fastqs = fastq.parse(<span class="string">"@SEQ_ID\nATGTAA\n+\n!''*%+"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "primers.santa_lucia"></a>
+    <strong>primers.santa_lucia (sequence, primer_concentration, salt_concentration, magnesium_concentration)</strong>
+    </dt>
+    <dd>
+    Returns the melting temperature of a primer given primer concentration, salt concentration, and magnesium concentration
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">sequence</span>
+         sequence of the primer
+        </li>
+        <li><span class="parameter">primer_concentration</span>
+         concentration of the primer
+        </li>
+        <li><span class="parameter">salt_concentration</span>
+         concentration of salt in buffer
+        </li>
+        <li><span class="parameter">magnesium_concentration</span>
+         concentration of magnesium in buffer
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        melting temperature
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> melting_temperature = primers.santa_lucia(<span class="string">"CAGGAAACAGCTATGAC"</span>, <span class="number">0.0000001</span>, <span class="number">0.350</span>, <span class="number">0</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "primers.marmur_doty"></a>
+    <strong>primers.marmur_doty (sequence)</strong>
+    </dt>
+    <dd>
+    Returns the melting temperature of an extremely short DNA sequence (<15bp)
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">sequence</span>
+         the primer sequence
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        melting temperature
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> melting_temperature = primers.marmur_doty(<span class="string">"ACGTCCGGACTT"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "primers.melting_temp"></a>
+    <strong>primers.melting_temp (sequence)</strong>
+    </dt>
+    <dd>
+    Returns the melting temperature using Santa Lucia with reasonable defaults
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">sequence</span>
+         the primer sequence
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        melting temperature
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> melting_temperature = primers.melting_temp(<span class="string">"ACGTCCGGACTT"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "genbank.parse"></a>
+    <strong>genbank.parse (input)</strong>
+    </dt>
+    <dd>
+    Parses a given genbank string into a list of genbank tables
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">input</span>
+         the input genbank string
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        a list of genbank tables
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> plasmids = genbank.parse(plasmids_gbk_string)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "codon.ncbi_standard_to_codon_table"></a>
+    <strong>codon.ncbi_standard_to_codon_table (amino_acids, starts)</strong>
+    </dt>
+    <dd>
+    Generates a codon table from a list of amino acids and a list of start codons, given in the standard NCBI codon table format.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">amino_acids</span>
+         the amino acid string
+        </li>
+        <li><span class="parameter">starts</span>
+         the start codon string
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        a codon table
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> ct = codon.ncbi_standard_to_codon_table(<span class="string">"FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"</span>, <span class="string">"---M------**--*----M------------MMMM---------------M------------"</span>)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "codon.new_table"></a>
+    <strong>codon.new_table (table_number)</strong>
+    </dt>
+    <dd>
+    Generates a new codon table given an NCBI codon table number.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">table_number</span>
+         the table number
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        a codon table
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> ct = codon.new_table(<span class="number">11</span>)</pre>
+    </ul>
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "COMPLEMENTS"></a>
+    <strong>COMPLEMENTS</strong>
+    </dt>
+    <dd>
+    complement.COMPLEMENTS are DNA base complements.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">A</span>
+
+        </li>
+        <li><span class="parameter">B</span>
+
+        </li>
+        <li><span class="parameter">C</span>
+
+        </li>
+        <li><span class="parameter">D</span>
+
+        </li>
+        <li><span class="parameter">G</span>
+
+        </li>
+        <li><span class="parameter">H</span>
+
+        </li>
+        <li><span class="parameter">K</span>
+
+        </li>
+        <li><span class="parameter">M</span>
+
+        </li>
+        <li><span class="parameter">N</span>
+
+        </li>
+        <li><span class="parameter">R</span>
+
+        </li>
+        <li><span class="parameter">S</span>
+
+        </li>
+        <li><span class="parameter">T</span>
+
+        </li>
+        <li><span class="parameter">U</span>
+
+        </li>
+        <li><span class="parameter">V</span>
+
+        </li>
+        <li><span class="parameter">W</span>
+
+        </li>
+        <li><span class="parameter">Y</span>
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "genbank.GENBANK_MOLECULE_TYPES"></a>
+    <strong>genbank.GENBANK_MOLECULE_TYPES</strong>
+    </dt>
+    <dd>
+    Genbank molecule types; mirrors poly's genbank parser.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">DNA</span>
+
+        </li>
+        <li><span class="parameter">genomic DNA</span>
+
+        </li>
+        <li><span class="parameter">genomic RNA</span>
+
+        </li>
+        <li><span class="parameter">mRNA</span>
+
+        </li>
+        <li><span class="parameter">tRNA</span>
+
+        </li>
+        <li><span class="parameter">rRNA</span>
+
+        </li>
+        <li><span class="parameter">other RNA</span>
+
+        </li>
+        <li><span class="parameter">other DNA</span>
+
+        </li>
+        <li><span class="parameter">transcribed RNA</span>
+
+        </li>
+        <li><span class="parameter">viral cRNA</span>
+
+        </li>
+        <li><span class="parameter">unassigned DNA</span>
+
+        </li>
+        <li><span class="parameter">unassigned RNA</span>
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "genbank.GENBANK_DIVISIONS"></a>
+    <strong>genbank.GENBANK_DIVISIONS</strong>
+    </dt>
+    <dd>
+    Genbank divisions; mirrors poly's genbank parser.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">PRI</span>
+        primate sequences
+        </li>
+        <li><span class="parameter">ROD</span>
+        rodent sequences
+        </li>
+        <li><span class="parameter">MAM</span>
+        other mamallian sequences
+        </li>
+        <li><span class="parameter">VRT</span>
+        other vertebrate sequences
+        </li>
+        <li><span class="parameter">INV</span>
+        invertebrate sequences
+        </li>
+        <li><span class="parameter">PLN</span>
+        plant, fungal, and algal sequences
+        </li>
+        <li><span class="parameter">BCT</span>
+        bacterial sequences
+        </li>
+        <li><span class="parameter">VRL</span>
+        viral sequences
+        </li>
+        <li><span class="parameter">PHG</span>
+        bacteriophage sequences
+        </li>
+        <li><span class="parameter">SYN</span>
+        synthetic sequences
+        </li>
+        <li><span class="parameter">UNA</span>
+        unannotated sequences
+        </li>
+        <li><span class="parameter">EST</span>
+        EST sequences (expressed sequence tags)
+        </li>
+        <li><span class="parameter">PAT</span>
+        patent sequences
+        </li>
+        <li><span class="parameter">STS</span>
+        STS sequences (sequence tagged sites)
+        </li>
+        <li><span class="parameter">GSS</span>
+        GSS sequences (genome survey sequences)
+        </li>
+        <li><span class="parameter">HTG</span>
+        HTG sequences (high-throughput genomic sequences)
+        </li>
+        <li><span class="parameter">HTC</span>
+        unfinished high-throughput cDNA sequencing
+        </li>
+        <li><span class="parameter">ENV</span>
+        environmental sampling sequences
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "CODON_TABLES"></a>
+    <strong>CODON_TABLES</strong>
+    </dt>
+    <dd>
+    codon.CODON_TABLES are current NCBI sanctioned codon tables with their respective numbers.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">1</span>
+         Translation table 1
+        </li>
+        <li><span class="parameter">2</span>
+         Translation table 2
+        </li>
+        <li><span class="parameter">3</span>
+         Translation table 3
+        </li>
+        <li><span class="parameter">4</span>
+         Translation table 4
+        </li>
+        <li><span class="parameter">5</span>
+         Translation table 5
+        </li>
+        <li><span class="parameter">6</span>
+         Translation table 6
+        </li>
+        <li><span class="parameter">7</span>
+         Translation table 7
+        </li>
+        <li><span class="parameter">8</span>
+         Translation table 8
+        </li>
+        <li><span class="parameter">9</span>
+         Translation table 9
+        </li>
+        <li><span class="parameter">10</span>
+         Translation table 10
+        </li>
+        <li><span class="parameter">11</span>
+         Translation table 11
+        </li>
+        <li><span class="parameter">12</span>
+         Translation table 12
+        </li>
+        <li><span class="parameter">13</span>
+         Translation table 13
+        </li>
+        <li><span class="parameter">14</span>
+         Translation table 14
+        </li>
+        <li><span class="parameter">15</span>
+         Translation table 15
+        </li>
+        <li><span class="parameter">16</span>
+         Translation table 16
+        </li>
+        <li><span class="parameter">17</span>
+         Translation table 17
+        </li>
+        <li><span class="parameter">18</span>
+         Translation table 18
+        </li>
+        <li><span class="parameter">19</span>
+         Translation table 19
+        </li>
+        <li><span class="parameter">20</span>
+         Translation table 20
+        </li>
+        <li><span class="parameter">21</span>
+         Translation table 21
+        </li>
+        <li><span class="parameter">22</span>
+         Translation table 22
+        </li>
+        <li><span class="parameter">23</span>
+         Translation table 23
+        </li>
+        <li><span class="parameter">24</span>
+         Translation table 24
+        </li>
+        <li><span class="parameter">25</span>
+         Translation table 25
+        </li>
+        <li><span class="parameter">26</span>
+         Translation table 26
+        </li>
+        <li><span class="parameter">27</span>
+         Translation table 27
+        </li>
+        <li><span class="parameter">28</span>
+         Translation table 28
+        </li>
+        <li><span class="parameter">29</span>
+         Translation table 29
+        </li>
+        <li><span class="parameter">30</span>
+         Translation table 30
+        </li>
+        <li><span class="parameter">31</span>
+         Translation table 31
+        </li>
+        <li><span class="parameter">32</span>
+         Translation table 32
+        </li>
+        <li><span class="parameter">33</span>
+         Translation table 33
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2022-08-25 17:07:09 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
