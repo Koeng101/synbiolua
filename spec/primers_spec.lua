@@ -45,4 +45,10 @@ describe("primers", function()
 			assert(math.abs(expected_tm - calc_tm) <= 0.2)
 		end)
 	end)
+	it("should handle spaces in inputs", function()
+		local test_seq = "G TAAAACGACGGCCAGT" -- M13 fwd
+		local expected_tm = 52.8
+		local calc_tm = primers.melting_temp(test_seq)
+		assert(math.abs(expected_tm - calc_tm) <= 0.2)
+	end)
 end)
