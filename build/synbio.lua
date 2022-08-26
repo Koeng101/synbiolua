@@ -385,11 +385,11 @@ genbank.GENBANK_DIVISIONS = {
 
 function genbank.parse(input)
 
-   function trim(s)
+   local function trim(s)
       return (s:gsub("^%s*(.-)%s*$", "%1"))
    end
 
-   function split(s, sep)
+   local function split(s, sep)
       if sep == nil then
          sep = "[^%s]+"
       end
@@ -400,7 +400,7 @@ function genbank.parse(input)
       return l
    end
 
-   function deepcopy(obj)
+   local function deepcopy(obj)
       if type(obj) ~= 'table' then return obj end
       local obj_table = obj
       local res = setmetatable({}, getmetatable(obj))
@@ -408,7 +408,7 @@ function genbank.parse(input)
       return res
    end
 
-   function count_leading_spaces(line)
+   local function count_leading_spaces(line)
       local i = 0
       for idx = 1, #line do
          if line:sub(idx, idx) == " " then
@@ -419,7 +419,7 @@ function genbank.parse(input)
       end
    end
 
-   function parse_locus(locus_string)
+   local function parse_locus(locus_string)
       local locus = genbank.Locus
 
       local locus_split = split(trim(locus_string))
@@ -465,7 +465,7 @@ function genbank.parse(input)
       return locus
    end
 
-   function parse_metadata(metadata)
+   local function parse_metadata(metadata)
       local output_metadata = ""
       if metadata == nil then
          return "."
@@ -480,8 +480,8 @@ function genbank.parse(input)
       return output_metadata
    end
 
-   function parse_references(metadata_data)
-      function add_key(reference, reference_key, reference_value)
+   local function parse_references(metadata_data)
+      local function add_key(reference, reference_key, reference_value)
 
          if reference_key == "AUTHORS" then
             reference.authors = reference_value
@@ -524,7 +524,7 @@ function genbank.parse(input)
       return reference
    end
 
-   function get_source_organism(metadata_data)
+   local function get_source_organism(metadata_data)
       local source = trim(metadata_data[1])
       local organism = ""
       local taxonomy = {}
@@ -553,7 +553,7 @@ function genbank.parse(input)
       return source, organism, taxonomy
    end
 
-   function parse_location(s)
+   local function parse_location(s)
       local location = {}
       location.sub_locations = {}
       if not s:find("%(") then
@@ -635,7 +635,7 @@ function genbank.parse(input)
 
 
 
-   function params_init()
+   local function params_init()
       local params = {}
       params.new_location = true
       params.parse_step = "metadata"
@@ -835,7 +835,7 @@ function genbank.parse(input)
 end
 
 function genbank.feature_sequence(self, parent)
-   function get_location(location, sequence)
+   local function get_location(location, sequence)
       local seq = ""
       if #location.sub_locations == 0 then
          seq = sequence:sub(location.location_start, location.location_end):upper()

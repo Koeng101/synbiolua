@@ -385,11 +385,11 @@ genbank.GENBANK_DIVISIONS = {
 -- @usage local plasmids = genbank.parse(plasmids_gbk_string)
 function genbank.parse(input: string): {genbank.Genbank}
     -- Start helper functions
-    function trim(s: string): string -- from PiL2 20.4
+    local function trim(s: string): string -- from PiL2 20.4
         return (s:gsub("^%s*(.-)%s*$", "%1"))
     end
     
-    function split(s: string, sep: any): {string}
+    local function split(s: string, sep: any): {string}
         if sep == nil then
             sep = "[^%s]+"
         end
@@ -400,7 +400,7 @@ function genbank.parse(input: string): {genbank.Genbank}
         return l
     end
     
-    function deepcopy(obj:any): any
+    local function deepcopy(obj:any): any
         if type(obj) ~= 'table' then return obj end
         local obj_table: {any:any} = obj as {any:any}
         local res = setmetatable({} as {any:any}, getmetatable(obj as {any:any}))
@@ -408,7 +408,7 @@ function genbank.parse(input: string): {genbank.Genbank}
         return res
     end
 
-    function count_leading_spaces(line: string): integer
+    local function count_leading_spaces(line: string): integer
         local i: integer = 0
         for idx = 1, #line do
             if line:sub(idx,idx) == " " then
@@ -419,7 +419,7 @@ function genbank.parse(input: string): {genbank.Genbank}
         end
     end
     
-    function parse_locus(locus_string: string): genbank.Locus
+    local function parse_locus(locus_string: string): genbank.Locus
         local locus = genbank.Locus
     
         local locus_split = split(trim(locus_string))
@@ -465,7 +465,7 @@ function genbank.parse(input: string): {genbank.Genbank}
         return locus
     end
     
-    function parse_metadata(metadata: {string}): string
+    local function parse_metadata(metadata: {string}): string
         local output_metadata: string = ""
         if metadata == nil then
             return "."
@@ -480,8 +480,8 @@ function genbank.parse(input: string): {genbank.Genbank}
         return output_metadata
     end
     
-    function parse_references(metadata_data: {string}): genbank.Reference
-        function add_key(reference: genbank.Reference, reference_key: string, reference_value: string): nil
+    local function parse_references(metadata_data: {string}): genbank.Reference
+        local function add_key(reference: genbank.Reference, reference_key: string, reference_value: string): nil
             -- TODO improve seed using table lookup
             if reference_key == "AUTHORS" then
                 reference.authors = reference_value
@@ -524,7 +524,7 @@ function genbank.parse(input: string): {genbank.Genbank}
         return reference
     end
 
-    function get_source_organism(metadata_data: {string}): string, string, {string}
+    local function get_source_organism(metadata_data: {string}): string, string, {string}
         local source:string = trim(metadata_data[1])
         local organism:string = ""
         local taxonomy:{string} = {}
@@ -553,7 +553,7 @@ function genbank.parse(input: string): {genbank.Genbank}
         return source, organism, taxonomy
     end
 
-    function parse_location(s: string): genbank.Location
+    local function parse_location(s: string): genbank.Location
         local location: genbank.Location = {}
 		location.sub_locations = {}
         if not s:find("%(") then
@@ -635,7 +635,7 @@ function genbank.parse(input: string): {genbank.Genbank}
         previous_line: string
         multi_line_feature: boolean
     end
-    function params_init(): ParseParameters
+    local function params_init(): ParseParameters
         local params: ParseParameters = {}
         params.new_location = true
         params.parse_step = "metadata"
@@ -835,7 +835,7 @@ function genbank.parse(input: string): {genbank.Genbank}
 end
 
 function genbank.feature_sequence(self: genbank.Feature, parent: genbank.Genbank): string
-	function get_location(location: genbank.Location, sequence: string): string
+	local function get_location(location: genbank.Location, sequence: string): string
 		local seq = ""
 		if #location.sub_locations == 0 then
 			seq = sequence:sub(location.location_start, location.location_end):upper()

@@ -29,8 +29,8 @@ build/synbio.lua
     5    W = "W",
     5    Y = "R",
     5 }
-  135 for k, v in pairs(complement.COMPLEMENTS) do
-  130    complement.COMPLEMENTS[k:lower()] = v:lower()
+  125 for k, v in pairs(complement.COMPLEMENTS) do
+  120    complement.COMPLEMENTS[k:lower()] = v:lower()
       end
 
 
@@ -388,11 +388,11 @@ build/synbio.lua
 
     5 function genbank.parse(input)
 
-    1    function trim(s)
+         local function trim(s)
   357       return (s:gsub("^%s*(.-)%s*$", "%1"))
          end
 
-    1    function split(s, sep)
+         local function split(s, sep)
   224       if sep == nil then
   150          sep = "[^%s]+"
             end
@@ -403,7 +403,7 @@ build/synbio.lua
   224       return l
          end
 
-    1    function deepcopy(obj)
+         local function deepcopy(obj)
   790       if type(obj) ~= 'table' then return obj end
   147       local obj_table = obj
   147       local res = setmetatable({}, getmetatable(obj))
@@ -411,7 +411,7 @@ build/synbio.lua
   147       return res
          end
 
-    1    function count_leading_spaces(line)
+         local function count_leading_spaces(line)
   146       local i = 0
  2556       for idx = 1, #line do
  2556          if line:sub(idx, idx) == " " then
@@ -422,7 +422,7 @@ build/synbio.lua
             end
          end
 
-    1    function parse_locus(locus_string)
+         local function parse_locus(locus_string)
     1       local locus = genbank.Locus
 
     1       local locus_split = split(trim(locus_string))
@@ -468,7 +468,7 @@ build/synbio.lua
     1       return locus
          end
 
-    1    function parse_metadata(metadata)
+         local function parse_metadata(metadata)
     5       local output_metadata = ""
     5       if metadata == nil then
 ****0          return "."
@@ -483,8 +483,8 @@ build/synbio.lua
     5       return output_metadata
          end
 
-    1    function parse_references(metadata_data)
-    2       function add_key(reference, reference_key, reference_value)
+         local function parse_references(metadata_data)
+            local function add_key(reference, reference_key, reference_value)
 
     7          if reference_key == "AUTHORS" then
     2             reference.authors = reference_value
@@ -527,7 +527,7 @@ build/synbio.lua
     2       return reference
          end
 
-    1    function get_source_organism(metadata_data)
+         local function get_source_organism(metadata_data)
     1       local source = trim(metadata_data[1])
     1       local organism = ""
     1       local taxonomy = {}
@@ -556,7 +556,7 @@ build/synbio.lua
     1       return source, organism, taxonomy
          end
 
-    1    function parse_location(s)
+         local function parse_location(s)
    27       local location = {}
    27       location.sub_locations = {}
    27       if not s:find("%(") then
@@ -638,7 +638,7 @@ build/synbio.lua
 
 
 
-    1    function params_init()
+         local function params_init()
     2       local params = {}
     2       params.new_location = true
     2       params.parse_step = "metadata"
@@ -838,7 +838,7 @@ build/synbio.lua
       end
 
     5 function genbank.feature_sequence(self, parent)
-    1    function get_location(location, sequence)
+         local function get_location(location, sequence)
     1       local seq = ""
     1       if #location.sub_locations == 0 then
     1          seq = sequence:sub(location.location_start, location.location_end):upper()
@@ -1055,6 +1055,6 @@ Summary
 
 File             Hits Missed Coverage
 -------------------------------------
-build/synbio.lua 430  81     84.15%
+build/synbio.lua 418  81     83.77%
 -------------------------------------
-Total            430  81     84.15%
+Total            418  81     83.77%
