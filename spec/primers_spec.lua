@@ -1,4 +1,5 @@
-local primers = require("build.primers")
+local synbio = require("build.synbio")
+local primers = synbio.primers
 
 describe("primers", function()
 	describe("Marmur Doty", function()

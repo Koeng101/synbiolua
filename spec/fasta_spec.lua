@@ -1,4 +1,5 @@
-local fasta = require("build.fasta")
+local synbio = require("build.synbio")
+local fasta = synbio.fasta
 
 local test_case = [[>hello there
 atg
