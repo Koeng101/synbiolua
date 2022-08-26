@@ -29,8 +29,8 @@ build/synbio.lua
     5    W = "W",
     5    Y = "R",
     5 }
-   45 for k, v in pairs(complement.COMPLEMENTS) do
-   40    complement.COMPLEMENTS[k:lower()] = v:lower()
+  125 for k, v in pairs(complement.COMPLEMENTS) do
+  120    complement.COMPLEMENTS[k:lower()] = v:lower()
       end
 
 
@@ -38,12 +38,12 @@ build/synbio.lua
 
 
     5 function complement.reverse_complement(sequence)
-    5    local s = ""
-   88    for i = 1, #sequence do
-   84       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
-   83       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
+    6    local s = ""
+  122    for i = 1, #sequence do
+  116       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
+  116       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
          end
-    4    return s:reverse()
+    6    return s:reverse()
       end
 
 
@@ -216,40 +216,41 @@ build/synbio.lua
 
     5 function primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
 
-    4    local melting_temperature = 0
-    4    local dH = 0
-    4    local dS = 0
+    5    local melting_temperature = 0
+    5    local dH = 0
+    5    local dS = 0
 
-    4    sequence = sequence:upper()
-    4    local gas_constant = 1.9872
-    4    local symmetry_factor = 4
+    5    sequence = sequence:upper()
+    5    sequence = sequence:gsub("[^ATGC]", "")
+    5    local gas_constant = 1.9872
+    5    local symmetry_factor = 4
 
 
-    4    dH = dH + primers.initial_thermodynamic_penalty.h
-    4    dS = dS + primers.initial_thermodynamic_penalty.s
+    5    dH = dH + primers.initial_thermodynamic_penalty.h
+    5    dS = dS + primers.initial_thermodynamic_penalty.s
 
-    4    if sequence == complement.reverse_complement(sequence) then
+    5    if sequence == complement.reverse_complement(sequence) then
     1       dH = dH + primers.symmetry_thermodynamic_penalty.h
     1       dS = dS + primers.symmetry_thermodynamic_penalty.s
     1       symmetry_factor = 1
          end
 
-    4    if sequence:sub(-1, -1) == "A" or sequence:sub(-1, -1) == "T" then
-    3       dH = dH + primers.terminal_at_thermodynamic_penalty.h
-    3       dS = dS + primers.terminal_at_thermodynamic_penalty.s
+    5    if sequence:sub(-1, -1) == "A" or sequence:sub(-1, -1) == "T" then
+    4       dH = dH + primers.terminal_at_thermodynamic_penalty.h
+    4       dS = dS + primers.terminal_at_thermodynamic_penalty.s
          end
 
-    4    local salt_effect = salt_concentration + (magnesium_concentration * 140)
-    4    dS = dS + ((0.368 * (sequence:len() - 1)) * math.log(salt_effect))
+    5    local salt_effect = salt_concentration + (magnesium_concentration * 140)
+    5    dS = dS + ((0.368 * (sequence:len() - 1)) * math.log(salt_effect))
 
-   67    for i = 1, sequence:len() - 1, 1 do
-   63       local dT = primers.nearest_neighbors_thermodynamics[sequence:sub(i, i + 1)]
-   63       dH = dH + dT.h
-   63       dS = dS + dT.s
+   84    for i = 1, sequence:len() - 1, 1 do
+   79       local dT = primers.nearest_neighbors_thermodynamics[sequence:sub(i, i + 1)]
+   79       dH = dH + dT.h
+   79       dS = dS + dT.s
          end
 
-    4    melting_temperature = dH * 1000 / (dS + gas_constant * math.log(primer_concentration / symmetry_factor)) - 273.15
-    4    return melting_temperature
+    5    melting_temperature = dH * 1000 / (dS + gas_constant * math.log(primer_concentration / symmetry_factor)) - 273.15
+    5    return melting_temperature
       end
 
 
@@ -270,10 +271,10 @@ build/synbio.lua
 
 
     5 function primers.melting_temp(sequence)
-    1    local primer_concentration = 0.000000500
-    1    local salt_concentration = 0.050
-    1    local magnesium_concentration = 0.0
-    1    return primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
+    2    local primer_concentration = 0.000000500
+    2    local salt_concentration = 0.050
+    2    local magnesium_concentration = 0.0
+    2    return primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
       end
 
 
@@ -1061,6 +1062,6 @@ Summary
 
 File             Hits Missed Coverage
 -------------------------------------
-build/synbio.lua 426  75     85.03%
+build/synbio.lua 427  75     85.06%
 -------------------------------------
-Total            426  75     85.03%
+Total            427  75     85.06%

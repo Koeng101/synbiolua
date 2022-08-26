@@ -218,6 +218,7 @@ function primers.santa_lucia(sequence: string, primer_concentration: number, sal
 	local dS: number = 0
 
 	sequence = sequence:upper()
+    sequence = sequence:gsub("[^ATGC]", "")
 	local gas_constant = 1.9872 -- gas constant (cal / mol - K)
 	local symmetry_factor = 4
 
