@@ -8,6 +8,7 @@ sed '$d' src/fastq.tl >> tmp.tl
 sed '$d' src/primers.tl >> tmp.tl
 sed '$d' src/genbank.tl >> tmp.tl
 sed '$d' src/codon.tl >> tmp.tl
+sed '$d' src/blake3.tl >> tmp.tl
 cat src/synbio.tl >> tmp.tl
 sed -i '/require/d' tmp.tl
 sed -i 's/SUBSTITUTE_WITH_VERSION_NUMBER/0.0.1/g' tmp.tl

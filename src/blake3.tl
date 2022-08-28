@@ -240,5 +240,4 @@ function blake3.sum(str: string): string
     return output_str
 end
 
---print(blake3.sum("hello world"))
-print(blake3.sum("GTCCTGTCGGGTTTCGCCACCTCTGACTTGAGCGTCGATTTTTGTGATGCTCGTCAGGGGGGCGGAGCCT"))
+return blake3
