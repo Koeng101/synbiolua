@@ -10,17 +10,42 @@ local record blake3
     record hasher
         size: integer
     end
+    -- Flags
+    flag_chunk_start: integer
+    flag_chunk_end: integer
+    flag_parent: integer
+    flag_root: integer
+    flag_keyed_hash: integer
+    flag_derive_key_context: integer
+    flag_derive_key_material: integer
+
+    -- Default nums
     default_key: {integer}
+    block_size: integer
+    chunk_size: integer
+
+    -- Sum
     sum: function(string): string
 end
+
+blake3.flag_chunk_start = 1
+blake3.flag_chunk_end = 2
+blake3.flag_parent = 4
+blake3.flag_root = 8
+blake3.flag_keyed_hash = 16
+blake3.flag_derive_key_context = 32
+blake3.flag_derive_key_material = 64
+
 blake3.default_key = {
 	0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
 	0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19,
 }
+blake3.block_size = 64
+blake3.chunk_size = 1024
 
 local iv = blake3.default_key
 
-local function compress_node_generic(n: blake3.node): {integer}
+local function compress_node(n: blake3.node): {integer}
     local function rotate(x:integer, k:integer): integer -- validate go equivalence with bits.RotateLeft32
         local a:integer = 32
         local s:integer = k & (a - 1)
@@ -124,25 +149,22 @@ local function compress_node_generic(n: blake3.node): {integer}
     return out as {integer}
 end
 
---local function compress_node(n: blake3.node): {integer}
---    return compress_node_generic(n)
---end
 
-local function bytes_to_int(b:{integer}): integer
+local function four_bytes_to_int(b:{integer}): integer
     return b[1] | b[2]<<8 | b[3]<<16 | b[4]<<24
 end
 
-local function str_to_int(str: string): {integer}
+local function bytes_to_int(b: {integer}): {integer}
     local n:{integer} = {}
     local a:integer = 4
-    local size = math.ceil(#str / a)
+    local size = math.ceil(#b / a)
     for idx=0,size do 
         local uint32:{integer} = {}
         for i=1,a do uint32[i] = 0 end
-        for i, v in ipairs({str:sub((idx*a)+1,(idx*a)+a):byte(1,-1)}) do 
+        for i, v in ipairs({table.unpack(b, (idx*a)+1,(idx*a)+a)}) do 
             uint32[i] = v
         end
-        n[#n+1] = bytes_to_int(uint32) -- 4 * 8bit
+        n[#n+1] = four_bytes_to_int(uint32) -- 4 * 8bit
     end
     return n
 end
@@ -166,35 +188,57 @@ local function ints_to_bytes(nums:{integer}): {integer}
     return output
 end
 
-local function hash_block(str: string): {integer}
-    local words = str_to_int(str)
-    local n:blake3.node = {cv = iv, block = words, block_len = #str, counter = 0, flags = 11}
-    local b:{integer} = compress_node_generic(n)
-    local output_str:string = ""
-    for _, v in ipairs(b) do output_str = output_str .. " " .. tostring(v) end
-    return ints_to_bytes(b)
+local function hash_block(b: {integer}): {integer}
+    local words = bytes_to_int(b)
+    local n:blake3.node = {cv = iv, block = words, block_len = #b, counter = 0, flags = blake3.flag_chunk_start | blake3.flag_chunk_end | blake3.flag_root}
+    local output_bytes:{integer} = compress_node(n)
+    return ints_to_bytes(output_bytes)
 end
 
---local function compress_chunk(chunk: {integer}, key: {integer}, counter: integer): blake3.node
---    local n: blake3.node = {cv = key, counter = counter, block_len = 64, flags = 1}
---    local block: {integer}
---    for 
---end
+local function chaining_value(n: blake3.node): {integer}
+    return {table.unpack(compress_node(n), 1, 8)}
+end
+
+local function compress_chunk(chunk: {integer}, key: {integer}, counter: integer, flags: integer): blake3.node
+    local n: blake3.node = {cv = key, counter = counter, block_len = 64, flags = flags | blake3.flag_chunk_start}
+    local block: {integer}
+    while #chunk > blake3.block_size do
+        block = {table.unpack(chunk, 1, blake3.block_size)}
+        local new_chunk: {integer} = {}
+        new_chunk = {table.unpack(chunk, blake3.block_size+1, #chunk)}
+        chunk = new_chunk
+        n.block = bytes_to_int(block)
+        n.cv = chaining_value(n)
+        n.flags = n.flags ~ blake3.flag_chunk_start
+    end
+    -- pad last block with zeros
+    n.block_len = #chunk
+    for idx=1,blake3.block_size do if chunk[idx] == nil then chunk[idx] = 0 end end
+    block = {table.unpack(chunk, 1, blake3.block_size)}
+    n.block = bytes_to_int(block)
+    n.flags = n.flags | blake3.flag_chunk_end
+    return n
+end
 
 function blake3.sum(str: string): string
-    --local n:blake3.node = {}
+    local n:blake3.node = {}
+    local b:{integer} = {str:byte(1,-1)}
     local output:{integer}
     local output_str:string = ""
-    if #str <= 64 then
-        output = hash_block(str)
-        for idx = 1, #output do 
-            output_str = output_str .. string.format("%x", output[idx])
-        end
+    if #str <= blake3.block_size then
+        output = hash_block(b)
+        for idx = 1, #output do output_str = output_str .. string.format("%x", output[idx]) end
         return output_str
- --   elseif #str <= 1024 then
- --       n = compress_chunk(b, iv, 0, 0)
+    elseif #str <= blake3.chunk_size then
+        n = compress_chunk(b, iv, 0, 0)
+        n.flags = n.flags | blake3.flag_root
+    else
+        print("wowdythere")
     end
+    output = ints_to_bytes(compress_node(n))
+    for idx = 1, #output do output_str = output_str .. string.format("%x", output[idx]) end
     return output_str
 end
 
-print(blake3.sum("hello world"))
+--print(blake3.sum("hello world"))
+print(blake3.sum("GTCCTGTCGGGTTTCGCCACCTCTGACTTGAGCGTCGATTTTTGTGATGCTCGTCAGGGGGGCGGAGCCT"))
