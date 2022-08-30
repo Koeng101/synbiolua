@@ -1,4 +1,4 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local table = _tl_compat and _tl_compat.table or table
+local bit32 = bit32; if not bit32 then local p, m = pcall(require, 'bit32'); if p then bit32 = m end end; local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local table = _tl_compat and _tl_compat.table or table; local _tl_table_unpack = unpack or table.unpack
 
 
 
@@ -1404,6 +1404,248 @@ end
 
 
 
+local blake3 = {node = {}, hasher = {}, }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+blake3.flag_chunk_start = 1
+blake3.flag_chunk_end = 2
+blake3.flag_parent = 4
+blake3.flag_root = 8
+blake3.flag_keyed_hash = 16
+blake3.flag_derive_key_context = 32
+blake3.flag_derive_key_material = 64
+
+blake3.default_key = {
+   0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
+   0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19,
+}
+blake3.block_size = 64
+blake3.chunk_size = 1024
+
+local iv = blake3.default_key
+
+local function compress_node(n)
+   local function rotate(x, k)
+      local a = 32
+      local s = bit32.band(k, (a - 1))
+      return bit32.bor(bit32.lshift(x, s), bit32.rshift(x, (a - s)))
+   end
+   local function overflow(num)
+      if num > 4294967295 then return num - 4294967296 else return num end
+   end
+   local function g(a, b, c, d, mx, my)
+      if mx == nil then mx = 0 end
+      if my == nil then my = 0 end
+      a = overflow(a + b + mx)
+      d = overflow(rotate(bit32.bxor(d, a), -16))
+      c = overflow(c + d)
+      b = overflow(rotate(bit32.bxor(b, c), -12))
+      a = overflow(a + b + my)
+      d = overflow(rotate(bit32.bxor(d, a), -8))
+      c = overflow(c + d)
+      b = overflow(rotate(bit32.bxor(b, c), -7))
+      return a, b, c, d
+   end
+
+
+
+   local s0, s4, s8, s12 = g(n.cv[1], n.cv[5], iv[1], n.counter, n.block[1], n.block[2])
+   local s1, s5, s9, s13 = g(n.cv[2], n.cv[6], iv[2], overflow(bit32.rshift(n.counter, 32)), n.block[3], n.block[4])
+   local s2, s6, s10, s14 = g(n.cv[3], n.cv[7], iv[3], n.block_len, n.block[5], n.block[6])
+   local s3, s7, s11, s15 = g(n.cv[4], n.cv[8], iv[4], n.flags, n.block[7], n.block[8])
+
+   s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[9], n.block[10])
+   s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[11], n.block[12])
+   s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[13], n.block[14])
+   s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[15], n.block[16])
+
+
+   s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[3], n.block[7])
+   s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[4], n.block[11])
+   s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[8], n.block[1])
+   s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[5], n.block[14])
+   s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[2], n.block[12])
+   s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[13], n.block[6])
+   s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[10], n.block[15])
+   s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[16], n.block[9])
+
+
+   s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[4], n.block[5])
+   s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[11], n.block[13])
+   s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[14], n.block[3])
+   s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[8], n.block[15])
+   s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[7], n.block[6])
+   s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[10], n.block[1])
+   s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[12], n.block[16])
+   s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[9], n.block[2])
+
+
+   s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[11], n.block[8])
+   s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[13], n.block[10])
+   s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[15], n.block[4])
+   s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[14], n.block[16])
+   s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[5], n.block[1])
+   s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[12], n.block[3])
+   s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[6], n.block[9])
+   s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[2], n.block[7])
+
+
+   s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[13], n.block[14])
+   s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[10], n.block[12])
+   s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[16], n.block[11])
+   s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[15], n.block[9])
+   s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[8], n.block[3])
+   s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[6], n.block[4])
+   s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[1], n.block[2])
+   s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[7], n.block[5])
+
+
+   s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[10], n.block[15])
+   s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[12], n.block[6])
+   s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[9], n.block[13])
+   s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[16], n.block[2])
+   s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[14], n.block[4])
+   s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[1], n.block[11])
+   s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[3], n.block[7])
+   s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[5], n.block[8])
+
+
+   s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[12], n.block[16])
+   s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[6], n.block[1])
+   s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[2], n.block[10])
+   s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[9], n.block[7])
+   s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[15], n.block[11])
+   s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[3], n.block[13])
+   s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[4], n.block[5])
+   s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[8], n.block[14])
+
+   local out = {
+      bit32.bxor(s0, s8), bit32.bxor(s1, s9), bit32.bxor(s2, s10), bit32.bxor(s3, s11),
+      bit32.bxor(s4, s12), bit32.bxor(s5, s13), bit32.bxor(s6, s14), bit32.bxor(s7, s15),
+      bit32.bxor(s8, n.cv[1]), bit32.bxor(s9, n.cv[2]), bit32.bxor(s10, n.cv[3]), bit32.bxor(s11, n.cv[4]),
+      bit32.bxor(s12, n.cv[5]), bit32.bxor(s13, n.cv[6]), bit32.bxor(s14, n.cv[7]), bit32.bxor(s15, n.cv[8]),
+   }
+   return out
+end
+
+
+local function four_bytes_to_int(b)
+   return bit32.bor(bit32.bor(bit32.bor(b[1], bit32.lshift(b[2], 8)), bit32.lshift(b[3], 16)), bit32.lshift(b[4], 24))
+end
+
+local function bytes_to_int(b)
+   local n = {}
+   local a = 4
+   local size = math.ceil(#b / a)
+   for idx = 0, size do
+      local uint32 = {}
+      for i = 1, a do uint32[i] = 0 end
+      for i, v in ipairs({ _tl_table_unpack(b, (idx * a) + 1, (idx * a) + a) }) do
+         uint32[i] = v
+      end
+      n[#n + 1] = four_bytes_to_int(uint32)
+   end
+   return n
+end
+
+local function int_to_bytes(num)
+   local t = {}
+   for idx = 0, 3 do
+      t[idx + 1] = bit32.band((bit32.rshift(num, (idx * 8))), 0xFF)
+   end
+   return t
+end
+
+local function ints_to_bytes(nums)
+   local output = {}
+   for idx = 1, #nums do
+      local b = int_to_bytes(nums[idx])
+      for idx2 = 1, #b do
+         output[#output + 1] = b[idx2]
+      end
+   end
+   return output
+end
+
+local function hash_block(b)
+   local words = bytes_to_int(b)
+   local n = { cv = iv, block = words, block_len = #b, counter = 0, flags = bit32.bor(bit32.bor(blake3.flag_chunk_start, blake3.flag_chunk_end), blake3.flag_root) }
+   local output_bytes = compress_node(n)
+   return ints_to_bytes(output_bytes)
+end
+
+local function chaining_value(n)
+   return { _tl_table_unpack(compress_node(n), 1, 8) }
+end
+
+local function compress_chunk(chunk, key, counter, flags)
+   local n = { cv = key, counter = counter, block_len = 64, flags = bit32.bor(flags, blake3.flag_chunk_start) }
+   local block
+   while #chunk > blake3.block_size do
+      block = { _tl_table_unpack(chunk, 1, blake3.block_size) }
+      local new_chunk = {}
+      new_chunk = { _tl_table_unpack(chunk, blake3.block_size + 1, #chunk) }
+      chunk = new_chunk
+      n.block = bytes_to_int(block)
+      n.cv = chaining_value(n)
+      n.flags = bit32.bxor(n.flags, blake3.flag_chunk_start)
+   end
+
+   n.block_len = #chunk
+   for idx = 1, blake3.block_size do if chunk[idx] == nil then chunk[idx] = 0 end end
+   block = { _tl_table_unpack(chunk, 1, blake3.block_size) }
+   n.block = bytes_to_int(block)
+   n.flags = bit32.bor(n.flags, blake3.flag_chunk_end)
+   return n
+end
+
+function blake3.sum(str)
+   local n = {}
+   local b = { str:byte(1, -1) }
+   local output
+   local output_str = ""
+   if #str <= blake3.block_size then
+      output = hash_block(b)
+      for idx = 1, #output do output_str = output_str .. string.format("%x", output[idx]) end
+      return output_str
+   elseif #str <= blake3.chunk_size then
+      n = compress_chunk(b, iv, 0, 0)
+      n.flags = bit32.bor(n.flags, blake3.flag_root)
+   else
+      print("wowdythere")
+   end
+   output = ints_to_bytes(compress_node(n))
+   for idx = 1, #output do output_str = output_str .. string.format("%x", output[idx]) end
+   return output_str
+end
+
 
 
 
@@ -1411,6 +1653,7 @@ end
 
 
 local synbio = {}
+
 
 
 
@@ -1429,5 +1672,6 @@ synbio.primers = primers
 synbio.genbank = genbank
 synbio.codon = codon
 synbio.json = json
+synbio.blake3 = blake3
 
 return synbio

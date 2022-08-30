@@ -1,52 +1,52 @@
 ==============================================================================
 build/synbio.lua
 ==============================================================================
-    6 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local table = _tl_compat and _tl_compat.table or table
+    7 local bit32 = bit32; if not bit32 then local p, m = pcall(require, 'bit32'); if p then bit32 = m end end; local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local table = _tl_compat and _tl_compat.table or table; local _tl_table_unpack = unpack or table.unpack
 
 
 
-    6 local complement = {}
+    7 local complement = {}
 
 
 
 
 
-    6 complement.COMPLEMENTS = {
-    6    A = "T",
-    6    B = "V",
-    6    C = "G",
-    6    D = "H",
-    6    G = "C",
-    6    H = "D",
-    6    K = "M",
-    6    M = "K",
-    6    N = "N",
-    6    R = "Y",
-    6    S = "S",
-    6    T = "A",
-    6    U = "A",
-    6    V = "B",
-    6    W = "W",
-    6    Y = "R",
-    6 }
-   84 for k, v in pairs(complement.COMPLEMENTS) do
-   78    complement.COMPLEMENTS[k:lower()] = v:lower()
+    7 complement.COMPLEMENTS = {
+    7    A = "T",
+    7    B = "V",
+    7    C = "G",
+    7    D = "H",
+    7    G = "C",
+    7    H = "D",
+    7    K = "M",
+    7    M = "K",
+    7    N = "N",
+    7    R = "Y",
+    7    S = "S",
+    7    T = "A",
+    7    U = "A",
+    7    V = "B",
+    7    W = "W",
+    7    Y = "R",
+    7 }
+   91 for k, v in pairs(complement.COMPLEMENTS) do
+   84    complement.COMPLEMENTS[k:lower()] = v:lower()
       end
 
 
 
 
 
-    6 function complement.reverse_complement(sequence)
+    7 function complement.reverse_complement(sequence)
     6    local s = ""
-  115    for i = 1, #sequence do
-  110       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
-  109       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
+  110    for i = 1, #sequence do
+  105       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
+  104       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
          end
     5    return s:reverse()
       end
 
-    6 local json = {}
+    7 local json = {}
 
 
 
@@ -59,19 +59,19 @@ build/synbio.lua
 
       local encode
 
-    6 local escape_char_map = {
-    6    ["\\"] = "\\",
-    6    ["\""] = "\"",
-    6    ["\b"] = "b",
-    6    ["\f"] = "f",
-    6    ["\n"] = "n",
-    6    ["\r"] = "r",
-    6    ["\t"] = "t",
+    7 local escape_char_map = {
+    7    ["\\"] = "\\",
+    7    ["\""] = "\"",
+    7    ["\b"] = "b",
+    7    ["\f"] = "f",
+    7    ["\n"] = "n",
+    7    ["\r"] = "r",
+    7    ["\t"] = "t",
       }
 
-    6 local escape_char_map_inv = { ["/"] = "/" }
-   48 for k, v in pairs(escape_char_map) do
-   42    escape_char_map_inv[v] = k
+    7 local escape_char_map_inv = { ["/"] = "/" }
+   56 for k, v in pairs(escape_char_map) do
+   49    escape_char_map_inv[v] = k
       end
 
       local function escape_char(c)
@@ -93,11 +93,11 @@ build/synbio.lua
     8    if rawget(val, 1) ~= nil or next(val) == nil then
 
     3       local n = 0
-    9       for k in pairs(val) do
-    7          if type(k) ~= "number" then
+    8       for k in pairs(val) do
+    6          if type(k) ~= "number" then
     1             error("invalid table: mixed or invalid key types")
                end
-    6          n = n + 1
+    5          n = n + 1
             end
     2       if n ~= #val then
     1          error("invalid table: sparse array")
@@ -111,13 +111,13 @@ build/synbio.lua
 
          else
 
-    8       for k, v in pairs(val) do
-    7          if type(k) ~= "string" then
+    9       for k, v in pairs(val) do
+    8          if type(k) ~= "string" then
     4             error("invalid table: mixed or invalid key types")
                end
-    3          local stack_value = encode(v, stack)
-    3          if stack_value ~= nil then
-    3             table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
+    4          local stack_value = encode(v, stack)
+    4          if stack_value ~= nil then
+    4             table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
                end
             end
     1       stack[val] = nil
@@ -126,61 +126,61 @@ build/synbio.lua
       end
 
       local function encode_string(val)
-   17    return '"' .. val:gsub('[%z\1-\31\\"]', escape_char) .. '"'
+   18    return '"' .. val:gsub('[%z\1-\31\\"]', escape_char) .. '"'
       end
 
 
       local function encode_number(val)
 
-   15    if val ~= val or val <= -math.huge or val >= math.huge then
+   17    if val ~= val or val <= -math.huge or val >= math.huge then
     3       error("unexpected number value '" .. tostring(val) .. "'")
          end
-   12    return string.format("%.14g", val)
+   14    return string.format("%.14g", val)
       end
 
 
-    6 local type_func_map = {
-    6    ["nil"] = encode_nil,
-    6    ["table"] = encode_table,
-    6    ["string"] = encode_string,
-    6    ["number"] = encode_number,
-    6    ["boolean"] = tostring,
+    7 local type_func_map = {
+    7    ["nil"] = encode_nil,
+    7    ["table"] = encode_table,
+    7    ["string"] = encode_string,
+    7    ["number"] = encode_number,
+    7    ["boolean"] = tostring,
       }
 
       encode = function(val, stack)
-   43    local t = type(val)
-   43    local f = type_func_map[t]
-   43    if f then
-   43       return f(val, stack)
+   46    local t = type(val)
+   46    local f = type_func_map[t]
+   46    if f then
+   46       return f(val, stack)
          end
 ****0    if t ~= "function" then
 ****0       error("unexpected type '" .. t .. "'")
          end
       end
 
-    6 function json.encode(val)
+    7 function json.encode(val)
    31    return encode(val)
       end
 
       local parse
 
       local function create_set(...)
-   24    local res = {}
-  162    for i = 1, select("#", ...) do
-  138       res[select(i, ...)] = true
+   28    local res = {}
+  189    for i = 1, select("#", ...) do
+  161       res[select(i, ...)] = true
          end
-   24    return res
+   28    return res
       end
 
-    6 local space_chars = create_set(" ", "\t", "\r", "\n")
-    6 local delim_chars = create_set(" ", "\t", "\r", "\n", "]", "}", ",")
-    6 local escape_chars = create_set("\\", "/", '"', "b", "f", "n", "r", "t", "u")
-    6 local literals = create_set("true", "false", "null")
+    7 local space_chars = create_set(" ", "\t", "\r", "\n")
+    7 local delim_chars = create_set(" ", "\t", "\r", "\n", "]", "}", ",")
+    7 local escape_chars = create_set("\\", "/", '"', "b", "f", "n", "r", "t", "u")
+    7 local literals = create_set("true", "false", "null")
 
-    6 local literal_map = {
-    6    ["true"] = true,
-    6    ["false"] = false,
-    6    ["null"] = nil,
+    7 local literal_map = {
+    7    ["true"] = true,
+    7    ["false"] = false,
+    7    ["null"] = nil,
       }
 
 
@@ -364,24 +364,24 @@ build/synbio.lua
       end
 
 
-    6 local char_func_map = {
-    6    ['"'] = parse_string,
-    6    ["0"] = parse_number,
-    6    ["1"] = parse_number,
-    6    ["2"] = parse_number,
-    6    ["3"] = parse_number,
-    6    ["4"] = parse_number,
-    6    ["5"] = parse_number,
-    6    ["6"] = parse_number,
-    6    ["7"] = parse_number,
-    6    ["8"] = parse_number,
-    6    ["9"] = parse_number,
-    6    ["-"] = parse_number,
-    6    ["t"] = parse_literal,
-    6    ["f"] = parse_literal,
-    6    ["n"] = parse_literal,
-    6    ["["] = parse_array,
-    6    ["{"] = parse_object,
+    7 local char_func_map = {
+    7    ['"'] = parse_string,
+    7    ["0"] = parse_number,
+    7    ["1"] = parse_number,
+    7    ["2"] = parse_number,
+    7    ["3"] = parse_number,
+    7    ["4"] = parse_number,
+    7    ["5"] = parse_number,
+    7    ["6"] = parse_number,
+    7    ["7"] = parse_number,
+    7    ["8"] = parse_number,
+    7    ["9"] = parse_number,
+    7    ["-"] = parse_number,
+    7    ["t"] = parse_literal,
+    7    ["f"] = parse_literal,
+    7    ["n"] = parse_literal,
+    7    ["["] = parse_array,
+    7    ["{"] = parse_object,
       }
 
       parse = function(str, idx)
@@ -394,7 +394,7 @@ build/synbio.lua
     6    decode_error(str, idx, "unexpected character '" .. chr .. "'")
       end
 
-    6 function json.decode(str)
+    7 function json.decode(str)
    55    if type(str) ~= "string" then
 ****0       error("expected argument of type string, got " .. type(str))
          end
@@ -414,7 +414,7 @@ build/synbio.lua
 
 
 
-    6 local fasta = {Fasta = {}, }
+    7 local fasta = {Fasta = {}, }
 
 
 
@@ -425,7 +425,7 @@ build/synbio.lua
 
 
 
-    6 function fasta.parse(input)
+    7 function fasta.parse(input)
     1    local output = {}
     1    local identifier = ""
     1    local sequence = ""
@@ -460,7 +460,7 @@ build/synbio.lua
 
 
 
-    6 local fastq = {Fastq = {}, }
+    7 local fastq = {Fastq = {}, }
 
 
 
@@ -472,7 +472,7 @@ build/synbio.lua
 
 
 
-    6 function fastq.parse(input)
+    7 function fastq.parse(input)
     1    local output = {}
     1    local identifier = ""
     1    local sequence = ""
@@ -515,7 +515,7 @@ build/synbio.lua
 
 
 
-    6 local primers = {thermodynamics = {}, }
+    7 local primers = {thermodynamics = {}, }
 
 
 
@@ -545,27 +545,27 @@ build/synbio.lua
 
 
 
-    6 primers.nearest_neighbors_thermodynamics = {
-    6    AA = { h = -7.6, s = -21.3 },
-    6    TT = { h = -7.6, s = -21.3 },
-    6    AT = { h = -7.2, s = -20.4 },
-    6    TA = { h = -7.2, s = -21.3 },
-    6    CA = { h = -8.5, s = -22.7 },
-    6    TG = { h = -8.5, s = -22.7 },
-    6    GT = { h = -8.4, s = -22.4 },
-    6    AC = { h = -8.4, s = -22.4 },
-    6    CT = { h = -7.8, s = -21.0 },
-    6    AG = { h = -7.8, s = -21.0 },
-    6    GA = { h = -8.2, s = -22.2 },
-    6    TC = { h = -8.2, s = -22.2 },
-    6    CG = { h = -10.6, s = -27.2 },
-    6    GC = { h = -9.8, s = -24.4 },
-    6    GG = { h = -8.0, s = -19.9 },
-    6    CC = { h = -8.0, s = -19.9 },
-    6 }
-    6 primers.initial_thermodynamic_penalty = { h = 0.2, s = -5.7 }
-    6 primers.symmetry_thermodynamic_penalty = { h = 0, s = -1.4 }
-    6 primers.terminal_at_thermodynamic_penalty = { h = 2.2, s = 6.9 }
+    7 primers.nearest_neighbors_thermodynamics = {
+    7    AA = { h = -7.6, s = -21.3 },
+    7    TT = { h = -7.6, s = -21.3 },
+    7    AT = { h = -7.2, s = -20.4 },
+    7    TA = { h = -7.2, s = -21.3 },
+    7    CA = { h = -8.5, s = -22.7 },
+    7    TG = { h = -8.5, s = -22.7 },
+    7    GT = { h = -8.4, s = -22.4 },
+    7    AC = { h = -8.4, s = -22.4 },
+    7    CT = { h = -7.8, s = -21.0 },
+    7    AG = { h = -7.8, s = -21.0 },
+    7    GA = { h = -8.2, s = -22.2 },
+    7    TC = { h = -8.2, s = -22.2 },
+    7    CG = { h = -10.6, s = -27.2 },
+    7    GC = { h = -9.8, s = -24.4 },
+    7    GG = { h = -8.0, s = -19.9 },
+    7    CC = { h = -8.0, s = -19.9 },
+    7 }
+    7 primers.initial_thermodynamic_penalty = { h = 0.2, s = -5.7 }
+    7 primers.symmetry_thermodynamic_penalty = { h = 0, s = -1.4 }
+    7 primers.terminal_at_thermodynamic_penalty = { h = 2.2, s = 6.9 }
 
 
 
@@ -574,7 +574,7 @@ build/synbio.lua
 
 
 
-    6 function primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
+    7 function primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
 
     5    local melting_temperature = 0
     5    local dH = 0
@@ -617,7 +617,7 @@ build/synbio.lua
 
 
 
-    6 function primers.marmur_doty(sequence)
+    7 function primers.marmur_doty(sequence)
     1    sequence = sequence:upper()
     1    local _, a_count = sequence:gsub("A", "")
     1    local _, t_count = sequence:gsub("T", "")
@@ -630,7 +630,7 @@ build/synbio.lua
 
 
 
-    6 function primers.melting_temp(sequence)
+    7 function primers.melting_temp(sequence)
     2    local primer_concentration = 0.000000500
     2    local salt_concentration = 0.050
     2    local magnesium_concentration = 0.0
@@ -645,7 +645,7 @@ build/synbio.lua
 
 
 
-    6 local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
+    7 local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
 
 
 
@@ -708,49 +708,49 @@ build/synbio.lua
 
 
 
-    6 genbank.GENBANK_MOLECULE_TYPES = {
-    6    "DNA",
-    6    "genomic DNA",
-    6    "genomic RNA",
-    6    "mRNA",
-    6    "tRNA",
-    6    "rRNA",
-    6    "other RNA",
-    6    "other DNA",
-    6    "transcribed RNA",
-    6    "viral cRNA",
-    6    "unassigned DNA",
+    7 genbank.GENBANK_MOLECULE_TYPES = {
+    7    "DNA",
+    7    "genomic DNA",
+    7    "genomic RNA",
+    7    "mRNA",
+    7    "tRNA",
+    7    "rRNA",
+    7    "other RNA",
+    7    "other DNA",
+    7    "transcribed RNA",
+    7    "viral cRNA",
+    7    "unassigned DNA",
          "unassigned RNA",
-    6 }
+    7 }
 
 
 
-    6 genbank.GENBANK_DIVISIONS = {
-    6    "PRI",
-    6    "ROD",
-    6    "MAM",
-    6    "VRT",
-    6    "INV",
-    6    "PLN",
-    6    "BCT",
-    6    "VRL",
-    6    "PHG",
-    6    "SYN",
-    6    "UNA",
-    6    "EST",
-    6    "PAT",
-    6    "STS",
-    6    "GSS",
-    6    "HTG",
-    6    "HTC",
+    7 genbank.GENBANK_DIVISIONS = {
+    7    "PRI",
+    7    "ROD",
+    7    "MAM",
+    7    "VRT",
+    7    "INV",
+    7    "PLN",
+    7    "BCT",
+    7    "VRL",
+    7    "PHG",
+    7    "SYN",
+    7    "UNA",
+    7    "EST",
+    7    "PAT",
+    7    "STS",
+    7    "GSS",
+    7    "HTG",
+    7    "HTC",
          "ENV",
-    6 }
+    7 }
 
 
 
 
 
-    6 function genbank.parse(input)
+    7 function genbank.parse(input)
 
          local function trim(s)
   357       return (s:gsub("^%s*(.-)%s*$", "%1"))
@@ -1207,7 +1207,7 @@ build/synbio.lua
     1    return genbanks
       end
 
-    6 function genbank.feature_sequence(self, parent)
+    7 function genbank.feature_sequence(self, parent)
          local function get_location(location, sequence)
     1       local seq = ""
     1       if #location.sub_locations == 0 then
@@ -1231,11 +1231,11 @@ build/synbio.lua
 
 
 
-    6 function genbank.from_json(str)
+    7 function genbank.from_json(str)
 ****0    return json.decode(str)
       end
 
-    6 function genbank.to_json(self)
+    7 function genbank.to_json(self)
 ****0    return json.encode(self)
       end
 
@@ -1244,7 +1244,7 @@ build/synbio.lua
 
 
 
-    6 local codon = {Codon = {}, AminoAcid = {}, CodonTable = {}, }
+    7 local codon = {Codon = {}, AminoAcid = {}, CodonTable = {}, }
 
 
 
@@ -1309,33 +1309,33 @@ build/synbio.lua
 
 
 
-    6 codon.CODON_TABLES = {
-    6    [1] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------" },
-    6    [2] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------" },
-    6    [3] = { "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------" },
-    6    [4] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--MM------**-------M------------MMMM---------------M------------" },
-    6    [5] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG", "---M------**--------------------MMMM---------------M------------" },
-    6    [6] = { "FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    6    [9] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
-    6    [10] = { "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
-    6    [11] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M------------MMMM---------------M------------" },
-    6    [12] = { "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
-    6    [13] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG", "---M------**----------------------MM---------------M------------" },
-    6    [14] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "-----------*-----------------------M----------------------------" },
-    6    [16] = { "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------*---*--------------------M----------------------------" },
-    6    [21] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
-    6    [22] = { "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "------*---*---*--------------------M----------------------------" },
-    6    [23] = { "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--*-------**--*-----------------M--M---------------M------------" },
-    6    [24] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M------**-------M---------------M---------------M------------" },
-    6    [25] = { "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**-----------------------M---------------M------------" },
-    6    [26] = { "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
-    6    [27] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    6    [28] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*--------------------M----------------------------" },
-    6    [29] = { "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    6    [30] = { "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    6    [31] = { "FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
-    6    [33] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------" },
-    6 }
+    7 codon.CODON_TABLES = {
+    7    [1] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------" },
+    7    [2] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------" },
+    7    [3] = { "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------" },
+    7    [4] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--MM------**-------M------------MMMM---------------M------------" },
+    7    [5] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG", "---M------**--------------------MMMM---------------M------------" },
+    7    [6] = { "FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+    7    [9] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
+    7    [10] = { "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
+    7    [11] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M------------MMMM---------------M------------" },
+    7    [12] = { "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
+    7    [13] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG", "---M------**----------------------MM---------------M------------" },
+    7    [14] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "-----------*-----------------------M----------------------------" },
+    7    [16] = { "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------*---*--------------------M----------------------------" },
+    7    [21] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
+    7    [22] = { "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "------*---*---*--------------------M----------------------------" },
+    7    [23] = { "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--*-------**--*-----------------M--M---------------M------------" },
+    7    [24] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M------**-------M---------------M---------------M------------" },
+    7    [25] = { "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**-----------------------M---------------M------------" },
+    7    [26] = { "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
+    7    [27] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+    7    [28] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*--------------------M----------------------------" },
+    7    [29] = { "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+    7    [30] = { "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+    7    [31] = { "FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
+    7    [33] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------" },
+    7 }
 
 
 
@@ -1343,7 +1343,7 @@ build/synbio.lua
 
 
 
-    6 function codon.ncbi_standard_to_codon_table(amino_acids, starts)
+    7 function codon.ncbi_standard_to_codon_table(amino_acids, starts)
 ****0    local base1 = "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
 ****0    local base2 = "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
 ****0    local base3 = "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
@@ -1379,7 +1379,7 @@ build/synbio.lua
 
 
 
-    6 function codon.new_table(table_number)
+    7 function codon.new_table(table_number)
 ****0    return codon.ncbi_standard_to_codon_table(codon.CODON_TABLES[table_number][1], codon.CODON_TABLES[table_number][2])
       end
 
@@ -1407,14 +1407,7 @@ build/synbio.lua
 
 
 
-
-
-
-
-
-
-    6 local synbio = {}
-
+    7 local blake3 = {node = {}, hasher = {}, }
 
 
 
@@ -1424,16 +1417,267 @@ build/synbio.lua
 
 
 
-    6 synbio.version = "0.0.1"
-    6 synbio.complement = complement
-    6 synbio.fasta = fasta
-    6 synbio.fastq = fastq
-    6 synbio.primers = primers
-    6 synbio.genbank = genbank
-    6 synbio.codon = codon
-    6 synbio.json = json
 
-    6 return synbio
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    7 blake3.flag_chunk_start = 1
+    7 blake3.flag_chunk_end = 2
+    7 blake3.flag_parent = 4
+    7 blake3.flag_root = 8
+    7 blake3.flag_keyed_hash = 16
+    7 blake3.flag_derive_key_context = 32
+    7 blake3.flag_derive_key_material = 64
+
+    7 blake3.default_key = {
+    7    0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
+    7    0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19,
+    7 }
+    7 blake3.block_size = 64
+    7 blake3.chunk_size = 1024
+
+    7 local iv = blake3.default_key
+
+      local function compress_node(n)
+         local function rotate(x, k)
+  672       local a = 32
+  672       local s = bit32.band(k, (a - 1))
+  672       return bit32.bor(bit32.lshift(x, s), bit32.rshift(x, (a - s)))
+         end
+         local function overflow(num)
+ 1347       if num > 4294967295 then return num - 4294967296 else return num end
+         end
+         local function g(a, b, c, d, mx, my)
+  168       if mx == nil then mx = 0 end
+  168       if my == nil then my = 0 end
+  168       a = overflow(a + b + mx)
+  168       d = overflow(rotate(bit32.bxor(d, a), -16))
+  168       c = overflow(c + d)
+  168       b = overflow(rotate(bit32.bxor(b, c), -12))
+  168       a = overflow(a + b + my)
+  168       d = overflow(rotate(bit32.bxor(d, a), -8))
+  168       c = overflow(c + d)
+  168       b = overflow(rotate(bit32.bxor(b, c), -7))
+  168       return a, b, c, d
+         end
+
+
+
+    3    local s0, s4, s8, s12 = g(n.cv[1], n.cv[5], iv[1], n.counter, n.block[1], n.block[2])
+    3    local s1, s5, s9, s13 = g(n.cv[2], n.cv[6], iv[2], overflow(bit32.rshift(n.counter, 32)), n.block[3], n.block[4])
+    3    local s2, s6, s10, s14 = g(n.cv[3], n.cv[7], iv[3], n.block_len, n.block[5], n.block[6])
+    3    local s3, s7, s11, s15 = g(n.cv[4], n.cv[8], iv[4], n.flags, n.block[7], n.block[8])
+
+    3    s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[9], n.block[10])
+    3    s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[11], n.block[12])
+    3    s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[13], n.block[14])
+    3    s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[15], n.block[16])
+
+
+    3    s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[3], n.block[7])
+    3    s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[4], n.block[11])
+    3    s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[8], n.block[1])
+    3    s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[5], n.block[14])
+    3    s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[2], n.block[12])
+    3    s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[13], n.block[6])
+    3    s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[10], n.block[15])
+    3    s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[16], n.block[9])
+
+
+    3    s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[4], n.block[5])
+    3    s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[11], n.block[13])
+    3    s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[14], n.block[3])
+    3    s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[8], n.block[15])
+    3    s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[7], n.block[6])
+    3    s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[10], n.block[1])
+    3    s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[12], n.block[16])
+    3    s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[9], n.block[2])
+
+
+    3    s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[11], n.block[8])
+    3    s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[13], n.block[10])
+    3    s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[15], n.block[4])
+    3    s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[14], n.block[16])
+    3    s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[5], n.block[1])
+    3    s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[12], n.block[3])
+    3    s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[6], n.block[9])
+    3    s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[2], n.block[7])
+
+
+    3    s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[13], n.block[14])
+    3    s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[10], n.block[12])
+    3    s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[16], n.block[11])
+    3    s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[15], n.block[9])
+    3    s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[8], n.block[3])
+    3    s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[6], n.block[4])
+    3    s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[1], n.block[2])
+    3    s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[7], n.block[5])
+
+
+    3    s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[10], n.block[15])
+    3    s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[12], n.block[6])
+    3    s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[9], n.block[13])
+    3    s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[16], n.block[2])
+    3    s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[14], n.block[4])
+    3    s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[1], n.block[11])
+    3    s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[3], n.block[7])
+    3    s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[5], n.block[8])
+
+
+    3    s0, s4, s8, s12 = g(s0, s4, s8, s12, n.block[12], n.block[16])
+    3    s1, s5, s9, s13 = g(s1, s5, s9, s13, n.block[6], n.block[1])
+    3    s2, s6, s10, s14 = g(s2, s6, s10, s14, n.block[2], n.block[10])
+    3    s3, s7, s11, s15 = g(s3, s7, s11, s15, n.block[9], n.block[7])
+    3    s0, s5, s10, s15 = g(s0, s5, s10, s15, n.block[15], n.block[11])
+    3    s1, s6, s11, s12 = g(s1, s6, s11, s12, n.block[3], n.block[13])
+    3    s2, s7, s8, s13 = g(s2, s7, s8, s13, n.block[4], n.block[5])
+    3    s3, s4, s9, s14 = g(s3, s4, s9, s14, n.block[8], n.block[14])
+
+    3    local out = {
+    3       bit32.bxor(s0, s8), bit32.bxor(s1, s9), bit32.bxor(s2, s10), bit32.bxor(s3, s11),
+    3       bit32.bxor(s4, s12), bit32.bxor(s5, s13), bit32.bxor(s6, s14), bit32.bxor(s7, s15),
+    3       bit32.bxor(s8, n.cv[1]), bit32.bxor(s9, n.cv[2]), bit32.bxor(s10, n.cv[3]), bit32.bxor(s11, n.cv[4]),
+    3       bit32.bxor(s12, n.cv[5]), bit32.bxor(s13, n.cv[6]), bit32.bxor(s14, n.cv[7]), bit32.bxor(s15, n.cv[8]),
+    3    }
+    3    return out
+      end
+
+
+      local function four_bytes_to_int(b)
+   38    return bit32.bor(bit32.bor(bit32.bor(b[1], bit32.lshift(b[2], 8)), bit32.lshift(b[3], 16)), bit32.lshift(b[4], 24))
+      end
+
+      local function bytes_to_int(b)
+    3    local n = {}
+    3    local a = 4
+    3    local size = math.ceil(#b / a)
+   41    for idx = 0, size do
+   38       local uint32 = {}
+  190       for i = 1, a do uint32[i] = 0 end
+  177       for i, v in ipairs({ _tl_table_unpack(b, (idx * a) + 1, (idx * a) + a) }) do
+  139          uint32[i] = v
+            end
+   38       n[#n + 1] = four_bytes_to_int(uint32)
+         end
+    3    return n
+      end
+
+      local function int_to_bytes(num)
+   32    local t = {}
+  160    for idx = 0, 3 do
+  128       t[idx + 1] = bit32.band((bit32.rshift(num, (idx * 8))), 0xFF)
+         end
+   32    return t
+      end
+
+      local function ints_to_bytes(nums)
+    2    local output = {}
+   34    for idx = 1, #nums do
+   32       local b = int_to_bytes(nums[idx])
+  160       for idx2 = 1, #b do
+  128          output[#output + 1] = b[idx2]
+            end
+         end
+    2    return output
+      end
+
+      local function hash_block(b)
+    1    local words = bytes_to_int(b)
+    1    local n = { cv = iv, block = words, block_len = #b, counter = 0, flags = bit32.bor(bit32.bor(blake3.flag_chunk_start, blake3.flag_chunk_end), blake3.flag_root) }
+    1    local output_bytes = compress_node(n)
+    1    return ints_to_bytes(output_bytes)
+      end
+
+      local function chaining_value(n)
+    1    return { _tl_table_unpack(compress_node(n), 1, 8) }
+      end
+
+      local function compress_chunk(chunk, key, counter, flags)
+    1    local n = { cv = key, counter = counter, block_len = 64, flags = bit32.bor(flags, blake3.flag_chunk_start) }
+         local block
+    2    while #chunk > blake3.block_size do
+    1       block = { _tl_table_unpack(chunk, 1, blake3.block_size) }
+    1       local new_chunk = {}
+    1       new_chunk = { _tl_table_unpack(chunk, blake3.block_size + 1, #chunk) }
+    1       chunk = new_chunk
+    1       n.block = bytes_to_int(block)
+    1       n.cv = chaining_value(n)
+    1       n.flags = bit32.bxor(n.flags, blake3.flag_chunk_start)
+         end
+
+    1    n.block_len = #chunk
+   65    for idx = 1, blake3.block_size do if chunk[idx] == nil then chunk[idx] = 0 end end
+    1    block = { _tl_table_unpack(chunk, 1, blake3.block_size) }
+    1    n.block = bytes_to_int(block)
+    1    n.flags = bit32.bor(n.flags, blake3.flag_chunk_end)
+    1    return n
+      end
+
+   14 function blake3.sum(str)
+    2    local n = {}
+    2    local b = { str:byte(1, -1) }
+         local output
+    2    local output_str = ""
+    2    if #str <= blake3.block_size then
+    1       output = hash_block(b)
+   65       for idx = 1, #output do output_str = output_str .. string.format("%x", output[idx]) end
+    1       return output_str
+    1    elseif #str <= blake3.chunk_size then
+    1       n = compress_chunk(b, iv, 0, 0)
+    1       n.flags = bit32.bor(n.flags, blake3.flag_root)
+         else
+****0       print("wowdythere")
+         end
+    1    output = ints_to_bytes(compress_node(n))
+   65    for idx = 1, #output do output_str = output_str .. string.format("%x", output[idx]) end
+    1    return output_str
+      end
+
+
+
+
+
+
+
+    7 local synbio = {}
+
+
+
+
+
+
+
+
+
+
+
+    7 synbio.version = "0.0.1"
+    7 synbio.complement = complement
+    7 synbio.fasta = fasta
+    7 synbio.fastq = fastq
+    7 synbio.primers = primers
+    7 synbio.genbank = genbank
+    7 synbio.codon = codon
+    7 synbio.json = json
+    7 synbio.blake3 = blake3
+
+    7 return synbio
 
 ==============================================================================
 Summary
@@ -1441,6 +1685,6 @@ Summary
 
 File             Hits Missed Coverage
 -------------------------------------
-build/synbio.lua 622  88     87.61%
+build/synbio.lua 771  89     89.65%
 -------------------------------------
-Total            622  88     87.61%
+Total            771  89     89.65%
