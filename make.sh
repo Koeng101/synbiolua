@@ -6,6 +6,7 @@ sed '$d' src/json.tl >> tmp.tl
 sed '$d' src/fasta.tl >> tmp.tl
 sed '$d' src/fastq.tl >> tmp.tl
 sed '$d' src/primers.tl >> tmp.tl
+sed '$d' src/pcr.tl >> tmp.tl
 sed '$d' src/genbank.tl >> tmp.tl
 sed '$d' src/codon.tl >> tmp.tl
 cat src/synbio.tl >> tmp.tl
