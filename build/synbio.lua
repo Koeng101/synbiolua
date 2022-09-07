@@ -633,6 +633,8 @@ function primers.melting_temp(sequence)
    local magnesium_concentration = 0.0
    return primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
 end
+
+
 local pcr = {Sequence = {}, }
 
 
@@ -729,8 +731,11 @@ function pcr.simulate_simple(sequences, primer_list, target_tm)
          while true do
             local match_start = string.find(sequence, minimal_primer, search_after, true)
             if match_start == nil then break end
-            if forward_locations[minimal_primer_idx] == nil then forward_locations[minimal_primer_idx] = {} end
-            forward_locations[minimal_primer_idx][#forward_locations[minimal_primer_idx] + 1] = match_start
+            if forward_locations[minimal_primer_idx] == nil then
+               forward_locations[minimal_primer_idx] = { match_start }
+            else
+               forward_locations[minimal_primer_idx][#forward_locations[minimal_primer_idx] + 1] = match_start
+            end
             search_after = match_start + 1
          end
 
@@ -750,14 +755,14 @@ function pcr.simulate_simple(sequences, primer_list, target_tm)
       local forward_locations_indexes = {}
       local reverse_locations_inverted = {}
       local reverse_locations_indexes = {}
-      for idx, values in ipairs(forward_locations) do
+      for idx, values in pairs(forward_locations) do
          for _, value in ipairs(values) do
             if forward_locations_inverted[value] == nil then forward_locations_inverted[value] = {} end
             forward_locations_inverted[value][#forward_locations_inverted[value] + 1] = idx
             forward_locations_indexes[#forward_locations_indexes + 1] = value
          end
       end
-      for idx, values in ipairs(reverse_locations) do
+      for idx, values in pairs(reverse_locations) do
          for _, value in ipairs(values) do
             if reverse_locations_inverted[value] == nil then reverse_locations_inverted[value] = {} end
             reverse_locations_inverted[value][#reverse_locations_inverted[value] + 1] = idx
@@ -831,6 +836,9 @@ function pcr.simulate(sequences, primer_list, target_tm)
    if #initial_amplification ~= #subsequent_amplification then error("Concatemerization detected in PCR.") end
    return initial_amplification
 end
+
+
+
 
 
 

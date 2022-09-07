@@ -633,6 +633,8 @@ function primers.melting_temp(sequence: string): number
 	local magnesium_concentration = 0.0 -- 0 mM (millimolar) magnesium concentration
 	return primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
 end
+
+-- Known bugs: primers at origin of circular sequence are not detected
 local record pcr
   minimal_primer_length: integer
   design_primers_with_overhang: function(string, string, string, number): string, string
@@ -720,8 +722,8 @@ function pcr.simulate_simple(sequences: {pcr.Sequence}, primer_list: {string}, t
     local sequence = sequence_record.sequence:upper()
 
     -- First, find the binding sites for each primer
-    local forward_locations: {{integer}} = {{}}
-    local reverse_locations: {{integer}} = {{}}
+    local forward_locations: {integer: {integer}} = {{}}
+    local reverse_locations: {integer: {integer}} = {{}}
     for minimal_primer_idx, minimal_primer in ipairs(minimal_primer_binds) do
       if minimal_primer == "" then break end
       -- Forward locations
@@ -729,8 +731,11 @@ function pcr.simulate_simple(sequences: {pcr.Sequence}, primer_list: {string}, t
       while true do
         local match_start = string.find(sequence, minimal_primer, search_after, true)
         if match_start == nil then break end
-        if forward_locations[minimal_primer_idx] == nil then forward_locations[minimal_primer_idx] = {} end
-        forward_locations[minimal_primer_idx][#forward_locations[minimal_primer_idx]+1] = match_start
+        if forward_locations[minimal_primer_idx] == nil then 
+          forward_locations[minimal_primer_idx] = {match_start}
+        else
+          forward_locations[minimal_primer_idx][#forward_locations[minimal_primer_idx]+1] = match_start
+        end
         search_after = match_start + 1
       end
       -- Reverse locations
@@ -750,14 +755,14 @@ function pcr.simulate_simple(sequences: {pcr.Sequence}, primer_list: {string}, t
     local forward_locations_indexes: {integer} = {}
     local reverse_locations_inverted: {integer: {integer}} = {}
     local reverse_locations_indexes: {integer} = {}
-    for idx, values in ipairs(forward_locations) do
+    for idx, values in pairs(forward_locations) do
       for _, value in ipairs(values) do
         if forward_locations_inverted[value] == nil then forward_locations_inverted[value] = {} end
         forward_locations_inverted[value][#forward_locations_inverted[value]+1] = idx
         forward_locations_indexes[#forward_locations_indexes+1] = value
       end
     end
-    for idx, values in ipairs(reverse_locations) do
+    for idx, values in pairs(reverse_locations) do
       for _, value in ipairs(values) do
         if reverse_locations_inverted[value] == nil then reverse_locations_inverted[value] = {} end
         reverse_locations_inverted[value][#reverse_locations_inverted[value]+1] = idx
@@ -831,6 +836,9 @@ function pcr.simulate(sequences: {pcr.Sequence}, primer_list: {string}, target_t
   if #initial_amplification ~= #subsequent_amplification then error("Concatemerization detected in PCR.") end
   return initial_amplification
 end
+
+--local gene = "aataattacaccgagataacacatcatggataaaccgatactcaaagattctatgaagctatttgaggcacttggtacgatcaagtcgcgctcaatgtttggtggcttcggacttttcgctgatgaaacgatgtttgcactggttgtgaatgatcaacttcacatacgagcagaccagcaaacttcatctaacttcgagaagcaagggctaaaaccgtacgtttataaaaagcgtggttttccagtcgttactaagtactacgcgatttccgacgacttgtgggaatccagtgaacgcttgatagaagtagcgaagaagtcgttagaacaagccaatttggaaaaaaagcaacaggcaagtagtaagcccgacaggttgaaagacctgcctaacttacgactagcgactgaacgaatgcttaagaaagctggtataaaatcagttgaacaacttgaagagaaaggtgcattgaatgcttacaaagcgatacgtgactctcactccgcaaaagtaagtattgagctactctgggctttagaaggagcgataaacggcacgcactggagcgtcgttcctcaatctcgcagagaagagctggaaaatgcgctttcttaa"
+--pcr.simulate({{sequence = gene, circular = false}}, {"aaaccgatactcaaagattctatgaagctatttg", "tcgctacttctatcaagcgttcactggattcccac", "ctcgcagagaagagctggaaaatgcgctttcttaa"}, 55.0)
 
 --[[---------------------------------------------------------------------------
 This module provides a parser for working with GenBank formatted genetic
