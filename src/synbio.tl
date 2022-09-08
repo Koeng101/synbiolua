@@ -7,6 +7,7 @@ local complement = require("complement")
 local fasta = require("fasta")
 local fastq = require("fastq")
 local primers = require("primers")
+local pcr = require("pcr")
 local genbank = require("genbank")
 local codon = require("codon")
 local json = require("json")
@@ -17,6 +18,7 @@ local record synbio
     fasta: fasta
     fastq: fastq
     primers: primers
+    pcr: pcr
     genbank: genbank
     codon: codon
     json: json
@@ -27,6 +29,7 @@ synbio.complement = complement
 synbio.fasta = fasta
 synbio.fastq = fastq
 synbio.primers = primers
+synbio.pcr = pcr
 synbio.genbank = genbank
 synbio.codon = codon
 synbio.json = json

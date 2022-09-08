@@ -1,52 +1,52 @@
 ==============================================================================
 build/synbio.lua
 ==============================================================================
-    6 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local table = _tl_compat and _tl_compat.table or table
+     7 local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pairs = _tl_compat and _tl_compat.pairs or pairs; local string = _tl_compat and _tl_compat.string or string; local table = _tl_compat and _tl_compat.table or table
 
 
 
-    6 local complement = {}
+     7 local complement = {}
 
 
 
 
 
-    6 complement.COMPLEMENTS = {
-    6    A = "T",
-    6    B = "V",
-    6    C = "G",
-    6    D = "H",
-    6    G = "C",
-    6    H = "D",
-    6    K = "M",
-    6    M = "K",
-    6    N = "N",
-    6    R = "Y",
-    6    S = "S",
-    6    T = "A",
-    6    U = "A",
-    6    V = "B",
-    6    W = "W",
-    6    Y = "R",
-    6 }
-   84 for k, v in pairs(complement.COMPLEMENTS) do
-   78    complement.COMPLEMENTS[k:lower()] = v:lower()
-      end
+     7 complement.COMPLEMENTS = {
+          A = "T",
+          B = "V",
+          C = "G",
+          D = "H",
+          G = "C",
+          H = "D",
+          K = "M",
+          M = "K",
+          N = "N",
+          R = "Y",
+          S = "S",
+          T = "A",
+          U = "A",
+          V = "B",
+          W = "W",
+          Y = "R",
+     7 }
+   196 for k, v in pairs(complement.COMPLEMENTS) do
+   567    complement.COMPLEMENTS[k:lower()] = v:lower()
+       end
 
 
 
 
 
-    6 function complement.reverse_complement(sequence)
-    6    local s = ""
-  115    for i = 1, #sequence do
-  110       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
-  109       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
-         end
-    5    return s:reverse()
-      end
+     7 function complement.reverse_complement(sequence)
+   338    local s = ""
+  7363    for i = 1, #sequence do
+ 14050       if complement.COMPLEMENTS[sequence:sub(i, i)] == nil then return "" end
+ 14050       s = s .. complement.COMPLEMENTS[sequence:sub(i, i)]
+          end
+   338    return s:reverse()
+       end
 
-    6 local json = {}
+     7 local json = {}
 
 
 
@@ -57,364 +57,364 @@ build/synbio.lua
 
 
 
-      local encode
+       local encode
 
-    6 local escape_char_map = {
-    6    ["\\"] = "\\",
-    6    ["\""] = "\"",
-    6    ["\b"] = "b",
-    6    ["\f"] = "f",
-    6    ["\n"] = "n",
-    6    ["\r"] = "r",
-    6    ["\t"] = "t",
-      }
+     7 local escape_char_map = {
+          ["\\"] = "\\",
+          ["\""] = "\"",
+          ["\b"] = "b",
+          ["\f"] = "f",
+          ["\n"] = "n",
+          ["\r"] = "r",
+          ["\t"] = "t",
+       }
 
-    6 local escape_char_map_inv = { ["/"] = "/" }
-   48 for k, v in pairs(escape_char_map) do
-   42    escape_char_map_inv[v] = k
-      end
+     7 local escape_char_map_inv = { ["/"] = "/" }
+    56 for k, v in pairs(escape_char_map) do
+    49    escape_char_map_inv[v] = k
+       end
 
-      local function escape_char(c)
-   18    return "\\" .. (escape_char_map[c] or string.format("u%04x", c:byte()))
-      end
+       local function escape_char(c)
+    18    return "\\" .. (escape_char_map[c] or string.format("u%04x", c:byte()))
+       end
 
-      local function encode_nil(_)
-    1    return "null"
-      end
+       local function encode_nil(_)
+     1    return "null"
+       end
 
-      local function encode_table(val, stack)
-    8    local res = {}
-    8    stack = stack or {}
+       local function encode_table(val, stack)
+     8    local res = {}
+     8    stack = stack or {}
 
 
-    8    if stack[val] then error("circular reference") end
-    8    stack[val] = true
+     8    if stack[val] then error("circular reference") end
+     8    stack[val] = true
 
-    8    if rawget(val, 1) ~= nil or next(val) == nil then
+     8    if rawget(val, 1) ~= nil or next(val) == nil then
 
-    3       local n = 0
-    9       for k in pairs(val) do
-    7          if type(k) ~= "number" then
-    1             error("invalid table: mixed or invalid key types")
-               end
-    6          n = n + 1
-            end
-    2       if n ~= #val then
-    1          error("invalid table: sparse array")
-            end
-
-    4       for _, v in ipairs(val) do
-    3          table.insert(res, encode(v, stack))
-            end
-    1       stack[val] = nil
-    1       return "[" .. table.concat(res, ",") .. "]"
-
-         else
-
-    8       for k, v in pairs(val) do
-    7          if type(k) ~= "string" then
-    4             error("invalid table: mixed or invalid key types")
-               end
-    3          local stack_value = encode(v, stack)
-    3          if stack_value ~= nil then
-    3             table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
-               end
-            end
-    1       stack[val] = nil
-    1       return "{" .. table.concat(res, ",") .. "}"
-         end
-      end
-
-      local function encode_string(val)
-   17    return '"' .. val:gsub('[%z\1-\31\\"]', escape_char) .. '"'
-      end
-
-
-      local function encode_number(val)
-
-   15    if val ~= val or val <= -math.huge or val >= math.huge then
-    3       error("unexpected number value '" .. tostring(val) .. "'")
-         end
-   12    return string.format("%.14g", val)
-      end
-
-
-    6 local type_func_map = {
-    6    ["nil"] = encode_nil,
-    6    ["table"] = encode_table,
-    6    ["string"] = encode_string,
-    6    ["number"] = encode_number,
-    6    ["boolean"] = tostring,
-      }
-
-      encode = function(val, stack)
-   43    local t = type(val)
-   43    local f = type_func_map[t]
-   43    if f then
-   43       return f(val, stack)
-         end
-****0    if t ~= "function" then
-****0       error("unexpected type '" .. t .. "'")
-         end
-      end
-
-    6 function json.encode(val)
-   31    return encode(val)
-      end
-
-      local parse
-
-      local function create_set(...)
-   24    local res = {}
-  162    for i = 1, select("#", ...) do
-  138       res[select(i, ...)] = true
-         end
-   24    return res
-      end
-
-    6 local space_chars = create_set(" ", "\t", "\r", "\n")
-    6 local delim_chars = create_set(" ", "\t", "\r", "\n", "]", "}", ",")
-    6 local escape_chars = create_set("\\", "/", '"', "b", "f", "n", "r", "t", "u")
-    6 local literals = create_set("true", "false", "null")
-
-    6 local literal_map = {
-    6    ["true"] = true,
-    6    ["false"] = false,
-    6    ["null"] = nil,
-      }
-
-
-      local function next_char(str, idx, set, negate)
-  327    for i = idx, #str do
-  274       if set[str:sub(i, i)] ~= negate then
-  157          return i
-            end
-         end
-   53    return #str + 1
-      end
-
-
-      local function decode_error(str, idx, msg)
-   21    local line_count = 1
-   21    local col_count = 1
-   77    for i = 1, idx - 1 do
-   56       col_count = col_count + 1
-   56       if str:sub(i, i) == "\n" then
-****0          line_count = line_count + 1
-****0          col_count = 1
-            end
-         end
-   21    error(string.format("%s at line %d col %d", msg, line_count, col_count))
-      end
-
-
-      local function codepoint_to_utf8(n)
-
-    7    local f = math.floor
-    7    if n <= 0x7f then
-    3       return string.char(n)
-    4    elseif n <= 0x7ff then
-****0       return string.char(f(n / 64) + 192, n % 64 + 128)
-    4    elseif n <= 0xffff then
-    3       return string.char(f(n / 4096) + 224, f(n % 4096 / 64) + 128, n % 64 + 128)
-    1    elseif n <= 0x10ffff then
-    2       return string.char(f(n / 262144) + 240, f(n % 262144 / 4096) + 128,
-    2       f(n % 4096 / 64) + 128, n % 64 + 128)
-         end
-****0    error(string.format("invalid unicode codepoint '%x'", n))
-      end
-
-
-      local function parse_unicode_escape(s)
-    7    local n1 = tonumber(s:sub(1, 4), 16)
-    7    local n2 = tonumber(s:sub(7, 10), 16)
-
-    7    if n2 then
-    1       return codepoint_to_utf8((n1 - 0xd800) * 0x400 + (n2 - 0xdc00) + 0x10000)
-         else
-    6       return codepoint_to_utf8(n1)
-         end
-      end
-
-
-      local function parse_string(str, i)
-   38    local res = ""
-   38    local j = i + 1
-   38    local k = j
-
-  133    while j <= #str do
-  132       local x = str:byte(j)
-
-  132       if x < 32 then
-    2          decode_error(str, j, "control character in string")
-
-  130       elseif x == 92 then
-   26          res = res .. str:sub(k, j - 1)
-   26          j = j + 1
-   26          local c = str:sub(j, j)
-   26          if c == "u" then
-    9             local hex = str:match("^[dD][89aAbB]%x%x\\u%x%x%x%x", j + 1) or
-    8             str:match("^%x%x%x%x", j + 1) or
-    2             decode_error(str, j - 1, "invalid unicode escape in string")
-    7             res = res .. parse_unicode_escape(hex)
-    7             j = j + #hex
-               else
-   17             if not escape_chars[c] then
-    2                decode_error(str, j - 1, "invalid escape char '" .. c .. "' in string")
-                  end
-   15             res = res .. escape_char_map_inv[c]
-               end
-   22          k = j + 1
-
-  104       elseif x == 34 then
-   31          res = res .. str:sub(k, j - 1)
-   31          return res, j + 1
-            end
-
-   95       j = j + 1
-         end
-
-    1    decode_error(str, i, "expected closing quote for string")
-      end
-
-
-      local function parse_number(str, i)
-   30    local x = next_char(str, i, delim_chars)
-   30    local s = str:sub(i, x - 1)
-   30    local n = tonumber(s)
-   30    if not n then
-    1       decode_error(str, i, "invalid number '" .. s .. "'")
-         end
-   29    return n, x
-      end
-
-
-      local function parse_literal(str, i)
-    3    local x = next_char(str, i, delim_chars)
-    3    local word = str:sub(i, x - 1)
-    3    if not literals[word] then
-****0       decode_error(str, i, "invalid literal '" .. word .. "'")
-         end
-    3    return literal_map[word], x
-      end
-
-
-      local function parse_array(str, i)
-    7    local res = {}
-    7    local n = 1
-    7    i = i + 1
-****0    while 1 do
-   19       local x = {}
-   19       i = next_char(str, i, space_chars, true)
-
-   19       if str:sub(i, i) == "]" then
-    1          i = i + 1
-               break
-            end
-
-   18       x, i = parse(str, i)
-   16       res[n] = x
-   16       n = n + 1
-
-   16       i = next_char(str, i, space_chars, true)
-   16       local chr = str:sub(i, i)
-   16       i = i + 1
-   16       if chr == "]" then break end
-   12       if chr ~= "," then decode_error(str, i, "expected ']' or ','") end
-         end
-    5    return res, i
-      end
-
-
-      local function parse_object(str, i)
-   13    local res = {}
-   13    i = i + 1
-****0    while 1 do
-            local key
-            local val
-   18       i = next_char(str, i, space_chars, true)
-
-   18       if str:sub(i, i) == "}" then
-    2          i = i + 1
-               break
-            end
-
-   16       if str:sub(i, i) ~= '"' then
-    4          decode_error(str, i, "expected string for key")
-            end
-   12       key, i = parse(str, i)
-
-   12       i = next_char(str, i, space_chars, true)
-   12       if str:sub(i, i) ~= ":" then
-****0          decode_error(str, i, "expected ':' after key")
-            end
-   12       i = next_char(str, i + 1, space_chars, true)
-
-   12       val, i = parse(str, i)
-
-    9       res[key] = val
-
-    9       i = next_char(str, i, space_chars, true)
-    9       local chr = str:sub(i, i)
-    9       i = i + 1
-    9       if chr == "}" then break end
-    6       if chr ~= "," then decode_error(str, i, "expected '}' or ','") end
-         end
-    5    return res, i
-      end
-
-
-    6 local char_func_map = {
-    6    ['"'] = parse_string,
-    6    ["0"] = parse_number,
-    6    ["1"] = parse_number,
-    6    ["2"] = parse_number,
-    6    ["3"] = parse_number,
-    6    ["4"] = parse_number,
-    6    ["5"] = parse_number,
-    6    ["6"] = parse_number,
-    6    ["7"] = parse_number,
-    6    ["8"] = parse_number,
-    6    ["9"] = parse_number,
-    6    ["-"] = parse_number,
-    6    ["t"] = parse_literal,
-    6    ["f"] = parse_literal,
-    6    ["n"] = parse_literal,
-    6    ["["] = parse_array,
-    6    ["{"] = parse_object,
-      }
+     3       local n = 0
+     9       for k in pairs(val) do
+     7          if type(k) ~= "number" then
+     1             error("invalid table: mixed or invalid key types")
+                end
+     6          n = n + 1
+             end
+     2       if n ~= #val then
+     1          error("invalid table: sparse array")
+             end
+
+     5       for _, v in ipairs(val) do
+     6          table.insert(res, encode(v, stack))
+             end
+     1       stack[val] = nil
+     1       return "[" .. table.concat(res, ",") .. "]"
+
+          else
+
+     8       for k, v in pairs(val) do
+     7          if type(k) ~= "string" then
+     4             error("invalid table: mixed or invalid key types")
+                end
+     3          local stack_value = encode(v, stack)
+     3          if stack_value ~= nil then
+     9             table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
+                end
+             end
+     1       stack[val] = nil
+     1       return "{" .. table.concat(res, ",") .. "}"
+          end
+       end
+
+       local function encode_string(val)
+    17    return '"' .. val:gsub('[%z\1-\31\\"]', escape_char) .. '"'
+       end
+
+
+       local function encode_number(val)
+
+    15    if val ~= val or val <= -math.huge or val >= math.huge then
+     3       error("unexpected number value '" .. tostring(val) .. "'")
+          end
+    12    return string.format("%.14g", val)
+       end
+
+
+     7 local type_func_map = {
+     7    ["nil"] = encode_nil,
+     7    ["table"] = encode_table,
+     7    ["string"] = encode_string,
+     7    ["number"] = encode_number,
+     7    ["boolean"] = tostring,
+       }
+
+       encode = function(val, stack)
+    43    local t = type(val)
+    43    local f = type_func_map[t]
+    43    if f then
+    43       return f(val, stack)
+          end
+*****0    if t ~= "function" then
+*****0       error("unexpected type '" .. t .. "'")
+          end
+       end
+
+     7 function json.encode(val)
+    31    return encode(val)
+       end
+
+       local parse
+
+       local function create_set(...)
+    28    local res = {}
+   189    for i = 1, select("#", ...) do
+   161       res[select(i, ...)] = true
+          end
+    28    return res
+       end
+
+     7 local space_chars = create_set(" ", "\t", "\r", "\n")
+     7 local delim_chars = create_set(" ", "\t", "\r", "\n", "]", "}", ",")
+     7 local escape_chars = create_set("\\", "/", '"', "b", "f", "n", "r", "t", "u")
+     7 local literals = create_set("true", "false", "null")
+
+     7 local literal_map = {
+          ["true"] = true,
+          ["false"] = false,
+          ["null"] = nil,
+       }
+
+
+       local function next_char(str, idx, set, negate)
+   327    for i = idx, #str do
+   548       if set[str:sub(i, i)] ~= negate then
+   157          return i
+             end
+          end
+    53    return #str + 1
+       end
+
+
+       local function decode_error(str, idx, msg)
+    21    local line_count = 1
+    21    local col_count = 1
+    77    for i = 1, idx - 1 do
+    56       col_count = col_count + 1
+   112       if str:sub(i, i) == "\n" then
+*****0          line_count = line_count + 1
+*****0          col_count = 1
+             end
+          end
+    21    error(string.format("%s at line %d col %d", msg, line_count, col_count))
+       end
+
+
+       local function codepoint_to_utf8(n)
+
+     7    local f = math.floor
+     7    if n <= 0x7f then
+     3       return string.char(n)
+     4    elseif n <= 0x7ff then
+*****0       return string.char(f(n / 64) + 192, n % 64 + 128)
+     4    elseif n <= 0xffff then
+     3       return string.char(f(n / 4096) + 224, f(n % 4096 / 64) + 128, n % 64 + 128)
+     1    elseif n <= 0x10ffff then
+     1       return string.char(f(n / 262144) + 240, f(n % 262144 / 4096) + 128,
+     1       f(n % 4096 / 64) + 128, n % 64 + 128)
+          end
+*****0    error(string.format("invalid unicode codepoint '%x'", n))
+       end
+
+
+       local function parse_unicode_escape(s)
+    14    local n1 = tonumber(s:sub(1, 4), 16)
+    14    local n2 = tonumber(s:sub(7, 10), 16)
+
+     7    if n2 then
+     1       return codepoint_to_utf8((n1 - 0xd800) * 0x400 + (n2 - 0xdc00) + 0x10000)
+          else
+     6       return codepoint_to_utf8(n1)
+          end
+       end
+
+
+       local function parse_string(str, i)
+    38    local res = ""
+    38    local j = i + 1
+    38    local k = j
+
+   133    while j <= #str do
+   132       local x = str:byte(j)
+
+   132       if x < 32 then
+     2          decode_error(str, j, "control character in string")
+
+   130       elseif x == 92 then
+    52          res = res .. str:sub(k, j - 1)
+    26          j = j + 1
+    26          local c = str:sub(j, j)
+    26          if c == "u" then
+     9             local hex = str:match("^[dD][89aAbB]%x%x\\u%x%x%x%x", j + 1) or
+     8             str:match("^%x%x%x%x", j + 1) or
+     2             decode_error(str, j - 1, "invalid unicode escape in string")
+    10             res = res .. parse_unicode_escape(hex)
+     7             j = j + #hex
+                else
+    17             if not escape_chars[c] then
+     2                decode_error(str, j - 1, "invalid escape char '" .. c .. "' in string")
+                   end
+    15             res = res .. escape_char_map_inv[c]
+                end
+    22          k = j + 1
+
+   104       elseif x == 34 then
+    62          res = res .. str:sub(k, j - 1)
+    31          return res, j + 1
+             end
+
+    95       j = j + 1
+          end
+
+     1    decode_error(str, i, "expected closing quote for string")
+       end
+
+
+       local function parse_number(str, i)
+    30    local x = next_char(str, i, delim_chars)
+    30    local s = str:sub(i, x - 1)
+    30    local n = tonumber(s)
+    30    if not n then
+     1       decode_error(str, i, "invalid number '" .. s .. "'")
+          end
+    29    return n, x
+       end
+
+
+       local function parse_literal(str, i)
+     3    local x = next_char(str, i, delim_chars)
+     3    local word = str:sub(i, x - 1)
+     3    if not literals[word] then
+*****0       decode_error(str, i, "invalid literal '" .. word .. "'")
+          end
+     3    return literal_map[word], x
+       end
+
+
+       local function parse_array(str, i)
+     7    local res = {}
+     7    local n = 1
+     7    i = i + 1
+    19    while 1 do
+    19       local x = {}
+    38       i = next_char(str, i, space_chars, true)
+
+    38       if str:sub(i, i) == "]" then
+     1          i = i + 1
+     1          break
+             end
+
+    34       x, i = parse(str, i)
+    16       res[n] = x
+    16       n = n + 1
+
+    32       i = next_char(str, i, space_chars, true)
+    16       local chr = str:sub(i, i)
+    16       i = i + 1
+    16       if chr == "]" then break end
+    12       if chr ~= "," then decode_error(str, i, "expected ']' or ','") end
+          end
+     5    return res, i
+       end
+
+
+       local function parse_object(str, i)
+    13    local res = {}
+    13    i = i + 1
+    18    while 1 do
+             local key
+             local val
+    36       i = next_char(str, i, space_chars, true)
+
+    36       if str:sub(i, i) == "}" then
+     2          i = i + 1
+     2          break
+             end
+
+    32       if str:sub(i, i) ~= '"' then
+     4          decode_error(str, i, "expected string for key")
+             end
+    24       key, i = parse(str, i)
+
+    24       i = next_char(str, i, space_chars, true)
+    24       if str:sub(i, i) ~= ":" then
+*****0          decode_error(str, i, "expected ':' after key")
+             end
+    24       i = next_char(str, i + 1, space_chars, true)
+
+    21       val, i = parse(str, i)
+
+     9       res[key] = val
+
+    18       i = next_char(str, i, space_chars, true)
+     9       local chr = str:sub(i, i)
+     9       i = i + 1
+     9       if chr == "}" then break end
+     6       if chr ~= "," then decode_error(str, i, "expected '}' or ','") end
+          end
+     5    return res, i
+       end
+
+
+     7 local char_func_map = {
+     7    ['"'] = parse_string,
+     7    ["0"] = parse_number,
+     7    ["1"] = parse_number,
+     7    ["2"] = parse_number,
+     7    ["3"] = parse_number,
+     7    ["4"] = parse_number,
+     7    ["5"] = parse_number,
+     7    ["6"] = parse_number,
+     7    ["7"] = parse_number,
+     7    ["8"] = parse_number,
+     7    ["9"] = parse_number,
+     7    ["-"] = parse_number,
+     7    ["t"] = parse_literal,
+     7    ["f"] = parse_literal,
+     7    ["n"] = parse_literal,
+     7    ["["] = parse_array,
+     7    ["{"] = parse_object,
+       }
 
-      parse = function(str, idx)
-   97    local chr = str:sub(idx, idx)
-   97    local f = char_func_map[chr]
-   97    if f then
-   91       local tbl, newIdx = f(str, idx)
-   73       return tbl, newIdx
-         end
-    6    decode_error(str, idx, "unexpected character '" .. chr .. "'")
-      end
+       parse = function(str, idx)
+    97    local chr = str:sub(idx, idx)
+    97    local f = char_func_map[chr]
+    97    if f then
+    91       local tbl, newIdx = f(str, idx)
+    73       return tbl, newIdx
+          end
+     6    decode_error(str, idx, "unexpected character '" .. chr .. "'")
+       end
 
-    6 function json.decode(str)
-   55    if type(str) ~= "string" then
-****0       error("expected argument of type string, got " .. type(str))
-         end
-   55    local res, idx = parse(str, next_char(str, 1, space_chars, true))
-   36    idx = next_char(str, idx, space_chars, true)
-   36    if idx <= #str then
-    2       decode_error(str, idx, "trailing garbage")
-         end
-   34    return res
-      end
-
-
-
-
-
-
-
-
-
-    6 local fasta = {Fasta = {}, }
+     7 function json.decode(str)
+    55    if type(str) ~= "string" then
+*****0       error("expected argument of type string, got " .. type(str))
+          end
+   110    local res, idx = parse(str, next_char(str, 1, space_chars, true))
+    72    idx = next_char(str, idx, space_chars, true)
+    36    if idx <= #str then
+     2       decode_error(str, idx, "trailing garbage")
+          end
+    34    return res
+       end
+
+
+
+
+
+
+
+
+
+     7 local fasta = {Fasta = {}, }
 
 
 
@@ -425,33 +425,33 @@ build/synbio.lua
 
 
 
-    6 function fasta.parse(input)
-    1    local output = {}
-    1    local identifier = ""
-    1    local sequence = ""
-    1    local start = true
-    7    for line in string.gmatch(input, '[^\r\n]+') do
-    6       local s = line:sub(1, 1)
+     7 function fasta.parse(input)
+     1    local output = {}
+     1    local identifier = ""
+     1    local sequence = ""
+     1    local start = true
+     8    for line in string.gmatch(input, '[^\r\n]+') do
+     6       local s = line:sub(1, 1)
 
-    6       if s == ">" then
+     6       if s == ">" then
 
-    2          if start then
-    1             identifier = line:sub(2, -1)
-    1             start = false
-               else
-    1             output[#output + 1] = { identifier = identifier, sequence = sequence }
-    1             identifier = ""
-    1             sequence = ""
-               end
+     2          if start then
+     2             identifier = line:sub(2, -1)
+     1             start = false
+                else
+     1             output[#output + 1] = { identifier = identifier, sequence = sequence }
+     1             identifier = ""
+     1             sequence = ""
+                end
 
-    4       elseif s ~= ">" and s ~= ";" then
-    3          sequence = sequence .. line:gsub("%s+", "")
-            end
-         end
+     4       elseif s ~= ">" and s ~= ";" then
+     3          sequence = sequence .. line:gsub("%s+", "")
+             end
+          end
 
-    1    output[#output + 1] = { identifier = identifier, sequence = sequence }
-    1    return output
-      end
+     1    output[#output + 1] = { identifier = identifier, sequence = sequence }
+     1    return output
+       end
 
 
 
@@ -460,7 +460,7 @@ build/synbio.lua
 
 
 
-    6 local fastq = {Fastq = {}, }
+     7 local fastq = {Fastq = {}, }
 
 
 
@@ -472,50 +472,50 @@ build/synbio.lua
 
 
 
-    6 function fastq.parse(input)
-    1    local output = {}
-    1    local identifier = ""
-    1    local sequence = ""
-    1    local quality = ""
-    1    local quality_next = false
-    1    local start = true
-    9    for line in string.gmatch(input, '[^\r\n]+') do
-    8       local s = line:sub(1, 1)
+     7 function fastq.parse(input)
+     1    local output = {}
+     1    local identifier = ""
+     1    local sequence = ""
+     1    local quality = ""
+     1    local quality_next = false
+     1    local start = true
+    10    for line in string.gmatch(input, '[^\r\n]+') do
+     8       local s = line:sub(1, 1)
 
-    8       if s == "@" then
+     8       if s == "@" then
 
-    2          if start then
-    1             identifier = line:sub(2, -1)
-    1             start = false
-               else
-    1             output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
-    1             identifier = ""
-    1             sequence = ""
-    1             quality = ""
-               end
+     2          if start then
+     2             identifier = line:sub(2, -1)
+     1             start = false
+                else
+     1             output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
+     1             identifier = ""
+     1             sequence = ""
+     1             quality = ""
+                end
 
-    6       elseif s ~= "@" then
-    6          if quality_next == true then
-    2             quality = line
-    2             quality_next = false
-               else
-    4             if s == "+" then
-    2                quality_next = true
-                  else
-    2                sequence = sequence .. line:gsub("%s+", "")
-                  end
-               end
-            end
-         end
+     6       elseif s ~= "@" then
+     6          if quality_next == true then
+     2             quality = line
+     2             quality_next = false
+                else
+     4             if s == "+" then
+     2                quality_next = true
+                   else
+     2                sequence = sequence .. line:gsub("%s+", "")
+                   end
+                end
+             end
+          end
 
-    1    output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
-    1    return output
-      end
+     1    output[#output + 1] = { identifier = identifier, sequence = sequence, quality = quality }
+     1    return output
+       end
 
 
 
 
-    6 local primers = {thermodynamics = {}, }
+     7 local primers = {thermodynamics = {}, }
 
 
 
@@ -545,27 +545,27 @@ build/synbio.lua
 
 
 
-    6 primers.nearest_neighbors_thermodynamics = {
-    6    AA = { h = -7.6, s = -21.3 },
-    6    TT = { h = -7.6, s = -21.3 },
-    6    AT = { h = -7.2, s = -20.4 },
-    6    TA = { h = -7.2, s = -21.3 },
-    6    CA = { h = -8.5, s = -22.7 },
-    6    TG = { h = -8.5, s = -22.7 },
-    6    GT = { h = -8.4, s = -22.4 },
-    6    AC = { h = -8.4, s = -22.4 },
-    6    CT = { h = -7.8, s = -21.0 },
-    6    AG = { h = -7.8, s = -21.0 },
-    6    GA = { h = -8.2, s = -22.2 },
-    6    TC = { h = -8.2, s = -22.2 },
-    6    CG = { h = -10.6, s = -27.2 },
-    6    GC = { h = -9.8, s = -24.4 },
-    6    GG = { h = -8.0, s = -19.9 },
-    6    CC = { h = -8.0, s = -19.9 },
-    6 }
-    6 primers.initial_thermodynamic_penalty = { h = 0.2, s = -5.7 }
-    6 primers.symmetry_thermodynamic_penalty = { h = 0, s = -1.4 }
-    6 primers.terminal_at_thermodynamic_penalty = { h = 2.2, s = 6.9 }
+     7 primers.nearest_neighbors_thermodynamics = {
+     7    AA = { h = -7.6, s = -21.3 },
+     7    TT = { h = -7.6, s = -21.3 },
+     7    AT = { h = -7.2, s = -20.4 },
+     7    TA = { h = -7.2, s = -21.3 },
+     7    CA = { h = -8.5, s = -22.7 },
+     7    TG = { h = -8.5, s = -22.7 },
+     7    GT = { h = -8.4, s = -22.4 },
+     7    AC = { h = -8.4, s = -22.4 },
+     7    CT = { h = -7.8, s = -21.0 },
+     7    AG = { h = -7.8, s = -21.0 },
+     7    GA = { h = -8.2, s = -22.2 },
+     7    TC = { h = -8.2, s = -22.2 },
+     7    CG = { h = -10.6, s = -27.2 },
+     7    GC = { h = -9.8, s = -24.4 },
+     7    GG = { h = -8.0, s = -19.9 },
+     7    CC = { h = -8.0, s = -19.9 },
+     7 }
+     7 primers.initial_thermodynamic_penalty = { h = 0.2, s = -5.7 }
+     7 primers.symmetry_thermodynamic_penalty = { h = 0, s = -1.4 }
+     7 primers.terminal_at_thermodynamic_penalty = { h = 2.2, s = 6.9 }
 
 
 
@@ -574,70 +574,71 @@ build/synbio.lua
 
 
 
-    6 function primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
+     7 function primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
 
-    5    local melting_temperature = 0
-    5    local dH = 0
-    5    local dS = 0
+   270    local melting_temperature = 0
+   270    local dH = 0
+   270    local dS = 0
 
-    5    sequence = sequence:upper()
-    5    sequence = sequence:gsub("[^ATGC]", "")
-    5    local gas_constant = 1.9872
-    5    local symmetry_factor = 4
+   540    sequence = sequence:upper()
+   270    sequence = sequence:gsub("[^ATGC]", "")
+   270    local gas_constant = 1.9872
+   270    local symmetry_factor = 4
 
 
-    5    dH = dH + primers.initial_thermodynamic_penalty.h
-    5    dS = dS + primers.initial_thermodynamic_penalty.s
+   270    dH = dH + primers.initial_thermodynamic_penalty.h
+   270    dS = dS + primers.initial_thermodynamic_penalty.s
 
-    5    if sequence == complement.reverse_complement(sequence) then
-    1       dH = dH + primers.symmetry_thermodynamic_penalty.h
-    1       dS = dS + primers.symmetry_thermodynamic_penalty.s
-    1       symmetry_factor = 1
-         end
+   540    if sequence == complement.reverse_complement(sequence) then
+     1       dH = dH + primers.symmetry_thermodynamic_penalty.h
+     1       dS = dS + primers.symmetry_thermodynamic_penalty.s
+     1       symmetry_factor = 1
+          end
 
-    5    if sequence:sub(-1, -1) == "A" or sequence:sub(-1, -1) == "T" then
-    4       dH = dH + primers.terminal_at_thermodynamic_penalty.h
-    4       dS = dS + primers.terminal_at_thermodynamic_penalty.s
-         end
+   760    if sequence:sub(-1, -1) == "A" or sequence:sub(-1, -1) == "T" then
+    74       dH = dH + primers.terminal_at_thermodynamic_penalty.h
+    74       dS = dS + primers.terminal_at_thermodynamic_penalty.s
+          end
 
-    5    local salt_effect = salt_concentration + (magnesium_concentration * 140)
-    5    dS = dS + ((0.368 * (sequence:len() - 1)) * math.log(salt_effect))
+   270    local salt_effect = salt_concentration + (magnesium_concentration * 140)
+   540    dS = dS + ((0.368 * (sequence:len() - 1)) * math.log(salt_effect))
 
-   84    for i = 1, sequence:len() - 1, 1 do
-   79       local dT = primers.nearest_neighbors_thermodynamics[sequence:sub(i, i + 1)]
-   79       dH = dH + dT.h
-   79       dS = dS + dT.s
-         end
+  5598    for i = 1, sequence:len() - 1, 1 do
+ 10116       local dT = primers.nearest_neighbors_thermodynamics[sequence:sub(i, i + 1)]
+  5058       dH = dH + dT.h
+  5058       dS = dS + dT.s
+          end
 
-    5    melting_temperature = dH * 1000 / (dS + gas_constant * math.log(primer_concentration / symmetry_factor)) - 273.15
-    5    return melting_temperature
-      end
+   270    melting_temperature = dH * 1000 / (dS + gas_constant * math.log(primer_concentration / symmetry_factor)) - 273.15
+   270    return melting_temperature
+       end
 
 
 
 
 
-    6 function primers.marmur_doty(sequence)
-    1    sequence = sequence:upper()
-    1    local _, a_count = sequence:gsub("A", "")
-    1    local _, t_count = sequence:gsub("T", "")
-    1    local _, g_count = sequence:gsub("G", "")
-    1    local _, c_count = sequence:gsub("C", "")
-    1    return 2 * (a_count + t_count) + 4 * (g_count + c_count) - 7.0
-      end
+     7 function primers.marmur_doty(sequence)
+     2    sequence = sequence:upper()
+     1    local _, a_count = sequence:gsub("A", "")
+     1    local _, t_count = sequence:gsub("T", "")
+     1    local _, g_count = sequence:gsub("G", "")
+     1    local _, c_count = sequence:gsub("C", "")
+     1    return 2 * (a_count + t_count) + 4 * (g_count + c_count) - 7.0
+       end
 
 
 
 
 
-    6 function primers.melting_temp(sequence)
-    2    local primer_concentration = 0.000000500
-    2    local salt_concentration = 0.050
-    2    local magnesium_concentration = 0.0
-    2    return primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
-      end
+     7 function primers.melting_temp(sequence)
+   267    local primer_concentration = 0.000000500
+   267    local salt_concentration = 0.050
+   267    local magnesium_concentration = 0.0
+   267    return primers.santa_lucia(sequence, primer_concentration, salt_concentration, magnesium_concentration)
+       end
 
 
+     7 local pcr = {Sequence = {}, }
 
 
 
@@ -645,37 +646,199 @@ build/synbio.lua
 
 
 
-    6 local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
 
 
 
 
+     7 pcr.minimal_primer_length = 15
 
+     7 function pcr.design_primers_with_overhang(sequence, forward_overhang, reverse_overhang, target_tm)
+     4    sequence = sequence:upper()
+     2    local additional_nucleotides = 1
+     2    local forward_primer = sequence:sub(1, pcr.minimal_primer_length)
+    60    while primers.melting_temp(forward_primer) < target_tm do
+    56       forward_primer = sequence:sub(1, pcr.minimal_primer_length + additional_nucleotides)
+    28       additional_nucleotides = additional_nucleotides + 1
+          end
+     2    additional_nucleotides = 1
+     4    local reverse_primer = complement.reverse_complement(sequence:sub(#sequence - pcr.minimal_primer_length, -1))
+    28    while primers.melting_temp(reverse_primer) < target_tm do
+    36       reverse_primer = complement.reverse_complement(sequence:sub(#sequence - (pcr.minimal_primer_length + additional_nucleotides), -1))
+    12       additional_nucleotides = additional_nucleotides + 1
+          end
 
 
+     2    forward_primer = forward_overhang .. forward_primer
+     4    reverse_primer = complement.reverse_complement(reverse_overhang) .. reverse_primer
+     2    return forward_primer, reverse_primer
+       end
 
+     7 function pcr.design_primers(sequence, target_tm)
+     1    return pcr.design_primers_with_overhang(sequence, "", "", target_tm)
+       end
 
+     7 function pcr.simulate_simple(sequences, primer_list, target_tm)
 
+    10    local minimal_primer_binds = {}
+          local additional_nucleotides
+    41    for idx = 1, #primer_list do
+    31       additional_nucleotides = 1
+    62       primer_list[idx] = primer_list[idx]:upper()
+    31       local minimal_primer = primer_list[idx]:sub(#primer_list[idx] - pcr.minimal_primer_length, -1)
+    31       local found_minimal_primer = true
+   442       while primers.melting_temp(minimal_primer) < target_tm do
+   192          local base_idx = #primer_list[idx] - (pcr.minimal_primer_length + additional_nucleotides)
+   192          if base_idx == 0 then
+     2             found_minimal_primer = false
+     2             break
+                end
+   380          minimal_primer = primer_list[idx]:sub(base_idx, -1)
+   190          additional_nucleotides = additional_nucleotides + 1
+             end
+    31       if found_minimal_primer then
+    29          minimal_primer_binds[idx] = minimal_primer
+             else
+     2          minimal_primer_binds[idx] = ""
+             end
+          end
 
 
+          local function generate_pcr_fragments(s, f, r, forward_primer_indexes, reverse_primer_indexes)
+    12       local gen_pcr_fragments = {}
+    37       for _, forward_primer_index in ipairs(forward_primer_indexes) do
+    13          local minimal_primer = minimal_primer_binds[forward_primer_index]
+    13          local full_primer_forward = primer_list[forward_primer_index]
+    39          for _, reverse_primer_index in ipairs(reverse_primer_indexes) do
+    13             local full_primer_reverse = complement.reverse_complement(primer_list[reverse_primer_index])
+    39             local pcr_fragment = full_primer_forward:sub(1, #full_primer_forward - #minimal_primer) .. s:sub(f, r) .. full_primer_reverse
+    13             gen_pcr_fragments[#gen_pcr_fragments + 1] = pcr_fragment
+                end
+             end
+    12       return gen_pcr_fragments
+          end
 
 
 
+    10    local pcr_fragments = {}
 
+    30    for _, sequence_record in ipairs(sequences) do
+    10       local sequence = sequence_record.sequence:upper()
 
 
+    10       local forward_locations = { {} }
+    10       local reverse_locations = { {} }
+    48       for minimal_primer_idx, minimal_primer in ipairs(minimal_primer_binds) do
+    30          if minimal_primer == "" then break end
 
+    28          local search_after = 1
+                while true do
+    45             local match_start = string.find(sequence, minimal_primer, search_after, true)
+    45             if match_start == nil then break end
+    17             if forward_locations[minimal_primer_idx] == nil then
+    11                forward_locations[minimal_primer_idx] = { match_start }
+                   else
+     6                forward_locations[minimal_primer_idx][#forward_locations[minimal_primer_idx] + 1] = match_start
+                   end
+    17             search_after = match_start + 1
+                end
 
+    28          search_after = 1
+                while true do
+    76             local match_start = string.find(sequence, complement.reverse_complement(minimal_primer), search_after, true)
+    38             if match_start == nil then break end
+    10             if reverse_locations[minimal_primer_idx] == nil then reverse_locations[minimal_primer_idx] = {} end
+    10             reverse_locations[minimal_primer_idx][#reverse_locations[minimal_primer_idx] + 1] = match_start
+    10             search_after = match_start + 1
+                end
+             end
 
 
 
+    10       local forward_locations_inverted = {}
+    10       local forward_locations_indexes = {}
+    10       local reverse_locations_inverted = {}
+    10       local reverse_locations_indexes = {}
+    31       for idx, values in pairs(forward_locations) do
+    59          for _, value in ipairs(values) do
+    17             if forward_locations_inverted[value] == nil then forward_locations_inverted[value] = {} end
+    17             forward_locations_inverted[value][#forward_locations_inverted[value] + 1] = idx
+    17             forward_locations_indexes[#forward_locations_indexes + 1] = value
+                end
+             end
+    26       for idx, values in pairs(reverse_locations) do
+    42          for _, value in ipairs(values) do
+    10             if reverse_locations_inverted[value] == nil then reverse_locations_inverted[value] = {} end
+    10             reverse_locations_inverted[value][#reverse_locations_inverted[value] + 1] = idx
+    10             reverse_locations_indexes[#reverse_locations_indexes + 1] = value
+                end
+             end
 
+    10       table.sort(forward_locations_indexes)
+    10       table.sort(reverse_locations_indexes)
 
+    37       for idx, forward_match_start in ipairs(forward_locations_indexes) do
 
+    17          if forward_locations_indexes[idx + 1] ~= nil then
 
+    19             for _, reverse_match_start in ipairs(reverse_locations_indexes) do
+     7                if (forward_match_start < reverse_match_start) and (reverse_match_start < forward_locations_indexes[idx + 1]) then
+     8                   for _, fragment in ipairs(generate_pcr_fragments(sequence, forward_match_start, reverse_match_start, forward_locations_inverted[forward_match_start], reverse_locations_inverted[reverse_match_start])) do
+     2                      pcr_fragments[#pcr_fragments + 1] = fragment
+                         end
+     8                   for _, fragment in ipairs(generate_pcr_fragments(sequence, forward_match_start, reverse_match_start, forward_locations_inverted[forward_match_start], reverse_locations_inverted[reverse_match_start])) do
+     2                      pcr_fragments[#pcr_fragments + 1] = fragment
+                         end
+     2                   break
+                      end
+                   end
+                else
+    10             local found_fragment = false
+    30             for _, reverse_match_start in ipairs(reverse_locations_indexes) do
+    10                if forward_match_start < reverse_match_start then
+    25                   for _, fragment in ipairs(generate_pcr_fragments(sequence, forward_match_start, reverse_match_start, forward_locations_inverted[forward_match_start], reverse_locations_inverted[reverse_match_start])) do
+     7                      pcr_fragments[#pcr_fragments + 1] = fragment
+                         end
+     6                   found_fragment = true
+                      end
+                   end
 
+    10             if sequence_record.circular then
+     6                for _, reverse_match_start in ipairs(reverse_locations_indexes) do
+     2                   if forward_locations_indexes[1] > reverse_match_start then
 
+     6                      local rotated_sequence = sequence:sub(forward_match_start, -1) .. sequence:sub(1, forward_match_start)
+     2                      local rotated_forward_location = 1
+     4                      local rotated_reverse_location = #sequence:sub(forward_match_start, -1) + reverse_match_start
+     8                      for _, fragment in ipairs(generate_pcr_fragments(rotated_sequence, rotated_forward_location, rotated_reverse_location, forward_locations_inverted[forward_match_start], reverse_locations_inverted[reverse_match_start])) do
+     2                         pcr_fragments[#pcr_fragments + 1] = fragment
+                            end
+                         end
+                      end
+                   end
+                end
+             end
+          end
+    10    local fragment_set = {}
+    33    for _, fragment in ipairs(pcr_fragments) do
+    13       fragment_set[fragment] = true
+          end
+    10    pcr_fragments = {}
+    21    for fragment, _ in pairs(fragment_set) do
+    11       pcr_fragments[#pcr_fragments + 1] = fragment
+          end
+    10    return pcr_fragments
+       end
 
+     7 function pcr.simulate(sequences, primer_list, target_tm)
+     5    local initial_amplification = pcr.simulate_simple(sequences, primer_list, target_tm)
+     5    if #initial_amplification == 0 then error("no amplicons") end
+    15    for _, fragment in ipairs(initial_amplification) do
+     5       primer_list[#primer_list + 1] = fragment
+          end
+     5    local subsequent_amplification = pcr.simulate_simple(sequences, primer_list, target_tm)
+     5    if #initial_amplification ~= #subsequent_amplification then error("Concatemerization detected in PCR.") end
+     4    return initial_amplification
+       end
 
 
 
@@ -689,6 +852,7 @@ build/synbio.lua
 
 
 
+     7 local genbank = {Locus = {}, Reference = {}, Meta = {}, Location = {}, Feature = {}, Genbank = {}, }
 
 
 
@@ -708,572 +872,565 @@ build/synbio.lua
 
 
 
-    6 genbank.GENBANK_MOLECULE_TYPES = {
-    6    "DNA",
-    6    "genomic DNA",
-    6    "genomic RNA",
-    6    "mRNA",
-    6    "tRNA",
-    6    "rRNA",
-    6    "other RNA",
-    6    "other DNA",
-    6    "transcribed RNA",
-    6    "viral cRNA",
-    6    "unassigned DNA",
-         "unassigned RNA",
-    6 }
 
 
 
-    6 genbank.GENBANK_DIVISIONS = {
-    6    "PRI",
-    6    "ROD",
-    6    "MAM",
-    6    "VRT",
-    6    "INV",
-    6    "PLN",
-    6    "BCT",
-    6    "VRL",
-    6    "PHG",
-    6    "SYN",
-    6    "UNA",
-    6    "EST",
-    6    "PAT",
-    6    "STS",
-    6    "GSS",
-    6    "HTG",
-    6    "HTC",
-         "ENV",
-    6 }
 
 
 
 
 
-    6 function genbank.parse(input)
 
-         local function trim(s)
-  357       return (s:gsub("^%s*(.-)%s*$", "%1"))
-         end
 
-         local function split(s, sep)
-  224       if sep == nil then
-  150          sep = "[^%s]+"
-            end
-  224       local l = {}
- 1038       for token in s:gmatch(sep) do
-  814          l[#l + 1] = token
-            end
-  224       return l
-         end
 
-         local function deepcopy(obj)
-  790       if type(obj) ~= 'table' then return obj end
-  147       local obj_table = obj
-  147       local res = setmetatable({}, getmetatable(obj))
-  531       for k, v in pairs(obj_table) do res[deepcopy(k)] = deepcopy(v) end
-  147       return res
-         end
 
-         local function count_leading_spaces(line)
-  146       local i = 0
- 2556       for idx = 1, #line do
- 2556          if line:sub(idx, idx) == " " then
- 2410             i = i + 1
-               else
-  146             return i
-               end
-            end
-         end
 
-         local function parse_locus(locus_string)
-    1       local locus = genbank.Locus
 
-    1       local locus_split = split(trim(locus_string))
-    1       local filtered_locus_split = {}
-    8       for i, _ in ipairs(locus_split) do
-    7          if locus_split[i] ~= "" then
-    7             filtered_locus_split[#filtered_locus_split + 1] = locus_split[i]
-               end
 
-            end
-    1       locus.name = filtered_locus_split[2]
 
 
 
 
-   13       for _, genbank_molecule in ipairs(genbank.GENBANK_MOLECULE_TYPES) do
-   12          if locus_string:find(genbank_molecule) then
-    1             locus.molecule_type = genbank_molecule
-               end
-            end
 
 
-    1       locus.circular = false
-    1       if locus_string:find("circular") then
-    1          locus.circular = true
-            end
 
 
-   19       for _, genbank_division in ipairs(genbank.GENBANK_DIVISIONS) do
-  144          for i, locus_split_without_start in ipairs(locus_split) do
-  126             if i > 2 then
-   90                if locus_split_without_start:find(genbank_division) then
-****0                   locus.genbank_division = genbank_division
-                     end
-                  end
-               end
-            end
 
 
-    1       local start_date, end_date = locus_string:find("%d%d.%a%a%a.%d%d%d%d")
-    1       locus.modification_date = locus_string:sub(start_date, end_date)
 
-    1       return locus
-         end
 
-         local function parse_metadata(metadata)
-    5       local output_metadata = ""
-    5       if metadata == nil then
-****0          return "."
-            end
-    5       if #metadata == 0 then
-****0          return "."
-            end
-   10       for _, data in ipairs(metadata) do
-    5          output_metadata = output_metadata .. trim(data) .. " "
-            end
-    5       output_metadata = output_metadata:sub(1, #output_metadata - 1)
-    5       return output_metadata
-         end
 
-         local function parse_references(metadata_data)
-            local function add_key(reference, reference_key, reference_value)
 
-    7          if reference_key == "AUTHORS" then
-    2             reference.authors = reference_value
-    5          elseif reference_key == "TITLE" then
-    2             reference.title = reference_value
-    3          elseif reference_key == "JOURNAL" then
-    2             reference.journal = reference_value
-    1          elseif reference_key == "PUBMED" then
-    1             reference.pubmed = reference_value
-****0          elseif reference_key == "REMARK" then
-****0             reference.remark = reference_value
-               else
-****0             error("Reference_key not in  [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK]. Got: " .. reference_key)
-               end
-            end
-    2       local reference = {}
-    2       if #metadata_data == 1 then
-****0          error("Got reference with no additional information")
-            end
 
-    2       local range_index = metadata_data[1]:find("%(")
-    2       if range_index ~= nil then
-    2          reference.range = metadata_data[1]:sub(range_index, -1)
-            end
 
-    2       local reference_key = split(trim(metadata_data[2]))[1]
-    2       local reference_value = trim(metadata_data[2]:sub(reference_key:len() + 3, -1))
 
 
-    9       for index = 3, #metadata_data do
-    7          if metadata_data[index]:sub(4, 4) ~= " " then
-    5             add_key(reference, reference_key, reference_value)
-    5             reference_key = trim(split(trim(metadata_data[index]))[1])
-    5             reference_value = trim(metadata_data[index]:sub(reference_key:len() + 3, -1))
-               else
-    2             reference_value = reference_value .. " " .. trim(metadata_data[index])
-               end
-            end
-    2       add_key(reference, reference_key, reference_value)
-    2       return reference
-         end
 
-         local function get_source_organism(metadata_data)
-    1       local source = trim(metadata_data[1])
-    1       local organism = ""
-    1       local taxonomy = {}
 
-            local data_line
-    2       for iterator = 2, #metadata_data do
-    1          data_line = metadata_data[iterator]
-    1          local head_string = split(trim(data_line))[1]
-    1          if head_string == "ORGANISM" then
-    1             local _, index = data_line:find("ORGANISM")
-    1             organism = trim(data_line:sub(index + 1, -1))
-               else
-****0             for _, taxonomy_data in ipairs(split(trim(data_line), "[^;]+")) do
-****0                local taxonomy_data_trimmed = trim(taxonomy_data)
 
-****0                if taxonomy_data_trimmed:len() > 1 then
-****0                   if taxonomy_data_trimmed:sub(-1, -1) == "." then
-****0                      taxonomy_data_trimmed = taxonomy_data_trimmed:sub(1, -2)
-                        end
-****0                   taxonomy[#taxonomy + 1] = taxonomy_data_trimmed
-                     end
-                  end
-               end
-            end
-    1       return source, organism, taxonomy
-         end
 
-         local function parse_location(s)
-   27       local location = {}
-   27       location.sub_locations = {}
-   27       if not s:find("%(") then
-   21          if not s:find("%.") then
-****0             local position = tonumber(s)
-****0             location.location_start = position
-****0             location.location_end = position
-               else
 
-   21             local start_end_split = split(s, "[^%.]+")
-   21             location.location_start = tonumber(start_end_split[1])
-   21             location.location_end = tonumber(start_end_split[2])
-               end
-            else
-    6          local first_outer_parentheses = s:find("%(")
-    6          local last_outer_parentheses = s:find("%)")
-    6          local expression = s:sub(first_outer_parentheses + 1, last_outer_parentheses - 1)
-    6          local command = s:sub(1, first_outer_parentheses - 1)
-    6          if command == "join" then
-****0             location.join = true
 
-****0             if expression:find("%(") then
-****0                local first_inner_parentheses = expression:find("%(")
-****0                local parentheses_count = 1
-****0                local comma = 0
-****0                local i = 2
-****0                while (parentheses_count > 0) do
-****0                   comma = i
-****0                   if expression:sub(first_inner_parentheses + i) == "(" then parentheses_count = parentheses_count + 1 end
-****0                   if expression:sub(first_inner_parentheses + i) == ")" then parentheses_count = parentheses_count - 1 end
-****0                   i = i + 1
-                     end
-****0                local parse_left_location = parse_location(expression:sub(1, first_inner_parentheses + comma + 1))
-****0                local parse_right_location = parse_location(expression:sub(2 + first_inner_parentheses + comma, -1))
-****0                location.sub_locations[#location.sub_locations + 1] = parse_left_location
-****0                location.sub_locations[#location.sub_locations + 1] = parse_right_location
-                  else
-****0                for _, number_range in ipairs(split(expression, "[^,]+")) do
-****0                   local join_location = parse_location(number_range)
-****0                   location.sub_locations[#location.sub_locations + 1] = join_location
-                     end
-                  end
-               end
 
-    6          if command == "complement" then
-    6             local sub_location = parse_location(expression)
-    6             sub_location.complement = true
-    6             location.sub_locations[#location.sub_locations + 1] = sub_location
-               end
-            end
 
-   27       if s:find("%<") then
-****0          location.five_prime_partial = true
-            end
-   27       if s:find("%>") then
-****0          location.three_prime_partial = true
-            end
 
 
-   27       if location.location_start == 0 and location.location_end and not location.join and not location.complement then
-****0          location = location.sub_locations[1]
-            end
-   27       return location
-         end
+     7 genbank.GENBANK_MOLECULE_TYPES = {
+          "DNA",
+          "genomic DNA",
+          "genomic RNA",
+          "mRNA",
+          "tRNA",
+          "rRNA",
+          "other RNA",
+          "other DNA",
+          "transcribed RNA",
+          "viral cRNA",
+          "unassigned DNA",
+          "unassigned RNA",
+     7 }
 
-    1    local ParseParameters = {}
 
 
+     7 genbank.GENBANK_DIVISIONS = {
+          "PRI",
+          "ROD",
+          "MAM",
+          "VRT",
+          "INV",
+          "PLN",
+          "BCT",
+          "VRL",
+          "PHG",
+          "SYN",
+          "UNA",
+          "EST",
+          "PAT",
+          "STS",
+          "GSS",
+          "HTG",
+          "HTC",
+          "ENV",
+     7 }
 
 
 
 
 
+     7 function genbank.parse(input)
 
+          local function trim(s)
+   357       return (s:gsub("^%s*(.-)%s*$", "%1"))
+          end
 
+          local function split(s, sep)
+   224       if sep == nil then
+   150          sep = "[^%s]+"
+             end
+   224       local l = {}
+  1038       for token in s:gmatch(sep) do
+   814          l[#l + 1] = token
+             end
+   224       return l
+          end
 
+          local function deepcopy(obj)
+   790       if type(obj) ~= 'table' then return obj end
+   147       local obj_table = obj
+   147       local res = setmetatable({}, getmetatable(obj))
+  1299       for k, v in pairs(obj_table) do res[deepcopy(k)] = deepcopy(v) end
+   147       return res
+          end
 
+          local function count_leading_spaces(line)
+   146       local i = 0
+  2556       for idx = 1, #line do
+  5112          if line:sub(idx, idx) == " " then
+  2410             i = i + 1
+                else
+   146             return i
+                end
+             end
+          end
 
+          local function parse_locus(locus_string)
+     1       local locus = genbank.Locus
 
+     2       local locus_split = split(trim(locus_string))
+     1       local filtered_locus_split = {}
+     9       for i, _ in ipairs(locus_split) do
+     7          if locus_split[i] ~= "" then
+     7             filtered_locus_split[#filtered_locus_split + 1] = locus_split[i]
+                end
 
+             end
+     1       locus.name = filtered_locus_split[2]
 
-         local function params_init()
-    2       local params = {}
-    2       params.new_location = true
-    2       params.parse_step = "metadata"
-    2       params.metadata_tag = ""
-    2       params.genbank = genbank.Genbank
-    2       params.genbank_started = false
 
 
-    2       params.attribute_value = ""
-    2       params.feature = genbank.Feature
-    2       params.feature.attributes = {}
-    2       params.features = {}
 
+    14       for _, genbank_molecule in ipairs(genbank.GENBANK_MOLECULE_TYPES) do
+    12          if locus_string:find(genbank_molecule) then
+     1             locus.molecule_type = genbank_molecule
+                end
+             end
 
-    2       params.genbank = genbank.Genbank
-    2       params.genbank.meta = genbank.Meta
-    2       params.genbank.meta.locus = genbank.Locus
-    2       params.genbank.meta.other = {}
-    2       params.genbank.meta.references = {}
-    2       params.genbank.features = {}
-    2       params.genbank.sequence = ""
-    2       return params
-         end
-    1    local params = params_init()
 
+     1       locus.circular = false
+     1       if locus_string:find("circular") then
+     1          locus.circular = true
+             end
 
-    1    local genbanks = {}
-    1    local copied_feature = {}
-    1    local copied_genbank = {}
-    1    local i = 0
-    1    local continue = false
 
+    20       for _, genbank_division in ipairs(genbank.GENBANK_DIVISIONS) do
+   162          for i, locus_split_without_start in ipairs(locus_split) do
+   126             if i > 2 then
+    90                if locus_split_without_start:find(genbank_division) then
+*****0                   locus.genbank_division = genbank_division
+                      end
+                   end
+                end
+             end
 
-  142    for line in string.gmatch(input, '[^\r\n]+') do
-  141       local split_line = split(trim(line))
 
-  141       local previous_line = params.current_line
-  141       params.current_line = line
-  141       params.previous_line = previous_line
+     1       local start_date, end_date = locus_string:find("%d%d.%a%a%a.%d%d%d%d")
+     2       locus.modification_date = locus_string:sub(start_date, end_date)
 
+     1       return locus
+          end
 
-  141       if not params.genbank_started then
-    1          if line:find("LOCUS") then
-    1             params = params_init()
-    1             params.genbank.meta.locus = parse_locus(line)
-    1             params.genbank_started = true
-               end
-    1          continue = true
-            end
+          local function parse_metadata(metadata)
+     5       local output_metadata = ""
+     5       if metadata == nil then
+*****0          return "."
+             end
+     5       if #metadata == 0 then
+*****0          return "."
+             end
+    15       for _, data in ipairs(metadata) do
+    10          output_metadata = output_metadata .. trim(data) .. " "
+             end
+    10       output_metadata = output_metadata:sub(1, #output_metadata - 1)
+     5       return output_metadata
+          end
 
+          local function parse_references(metadata_data)
+             local function add_key(reference, reference_key, reference_value)
 
-  141       if params.parse_step == "metadata" and not continue then
+     7          if reference_key == "AUTHORS" then
+     2             reference.authors = reference_value
+     5          elseif reference_key == "TITLE" then
+     2             reference.title = reference_value
+     3          elseif reference_key == "JOURNAL" then
+     2             reference.journal = reference_value
+     1          elseif reference_key == "PUBMED" then
+     1             reference.pubmed = reference_value
+*****0          elseif reference_key == "REMARK" then
+*****0             reference.remark = reference_value
+                else
+*****0             error("Reference_key not in  [AUTHORS, TITLE, JOURNAL, PUBMED, REMARK]. Got: " .. reference_key)
+                end
+             end
+     2       local reference = {}
+     2       if #metadata_data == 1 then
+*****0          error("Got reference with no additional information")
+             end
 
-   20          if line:len() == 0 then
-****0             error("Empty metadata line on " .. i)
-               end
+     2       local range_index = metadata_data[1]:find("%(")
+     2       if range_index ~= nil then
+     4          reference.range = metadata_data[1]:sub(range_index, -1)
+             end
 
+     6       local reference_key = split(trim(metadata_data[2]))[1]
+     6       local reference_value = trim(metadata_data[2]:sub(reference_key:len() + 3, -1))
 
-   20          if line:sub(1, 1) ~= " " or params.metadata_tag == "FEATURES" then
 
-   10             if params.metadata_tag == "DEFINITION" then
-    1                params.genbank.meta.definition = parse_metadata(params.metadata_data)
-    9             elseif params.metadata_tag == "ACCESSION" then
-    1                params.genbank.meta.accession = parse_metadata(params.metadata_data)
-    8             elseif params.metadata_tag == "VERSION" then
-    1                params.genbank.meta.version = parse_metadata(params.metadata_data)
-    7             elseif params.metadata_tag == "KEYWORDS" then
-    1                params.genbank.meta.keywords = parse_metadata(params.metadata_data)
-    6             elseif params.metadata_tag == "SOURCE" then
-    1                params.genbank.meta.source, params.genbank.meta.organism, params.genbank.meta.taxonomy = get_source_organism(params.metadata_data)
-    5             elseif params.metadata_tag == "REFERENCE" then
-    2                params.genbank.meta.references[#params.genbank.meta.references + 1] = parse_references(params.metadata_data)
-    3             elseif params.metadata_tag == "FEATURES" then
-    1                params.parse_step = "features"
+     9       for index = 3, #metadata_data do
+    14          if metadata_data[index]:sub(4, 4) ~= " " then
+     5             add_key(reference, reference_key, reference_value)
+    20             reference_key = trim(split(trim(metadata_data[index]))[1])
+    20             reference_value = trim(metadata_data[index]:sub(reference_key:len() + 3, -1))
+                else
+     4             reference_value = reference_value .. " " .. trim(metadata_data[index])
+                end
+             end
+     2       add_key(reference, reference_key, reference_value)
+     2       return reference
+          end
 
+          local function get_source_organism(metadata_data)
+     1       local source = trim(metadata_data[1])
+     1       local organism = ""
+     1       local taxonomy = {}
 
-    1                params.feature.feature_type = trim(split_line[1])
-    1                params.feature.gbk_location_string = trim(split_line[#split_line])
-    1                params.new_location = true
-    1                continue = true
-                  else
-    2                if not continue then
-    2                   if params.metadata_tag ~= "" then
-    1                      params.genbank.meta.other[params.metadata_tag] = parse_metadata(params.metadata_data)
-                        end
-                     end
-                  end
-   10             if not continue then
-    9                params.metadata_tag = trim(split_line[1])
-    9                params.metadata_data = { trim(line:sub(params.metadata_tag:len() + 1)) }
-                  end
-               else
-   10             params.metadata_data[#params.metadata_data + 1] = line
-               end
-            end
+             local data_line
+     2       for iterator = 2, #metadata_data do
+     1          data_line = metadata_data[iterator]
+     3          local head_string = split(trim(data_line))[1]
+     1          if head_string == "ORGANISM" then
+     1             local _, index = data_line:find("ORGANISM")
+     3             organism = trim(data_line:sub(index + 1, -1))
+                else
+*****0             for _, taxonomy_data in ipairs(split(trim(data_line), "[^;]+")) do
+*****0                local taxonomy_data_trimmed = trim(taxonomy_data)
 
+*****0                if taxonomy_data_trimmed:len() > 1 then
+*****0                   if taxonomy_data_trimmed:sub(-1, -1) == "." then
+*****0                      taxonomy_data_trimmed = taxonomy_data_trimmed:sub(1, -2)
+                         end
+*****0                   taxonomy[#taxonomy + 1] = taxonomy_data_trimmed
+                      end
+                   end
+                end
+             end
+     1       return source, organism, taxonomy
+          end
 
-  141       if params.parse_step == "features" and not continue then
-               local trimmed_line
+          local function parse_location(s)
+    27       local location = {}
+    27       location.sub_locations = {}
+    27       if not s:find("%(") then
+    21          if not s:find("%.") then
+*****0             local position = tonumber(s)
+*****0             location.location_start = position
+*****0             location.location_end = position
+                else
 
-   74          if line:find("ORIGIN") then
-    1             params.parse_step = "sequence"
+    21             local start_end_split = split(s, "[^%.]+")
+    21             location.location_start = tonumber(start_end_split[1])
+    21             location.location_end = tonumber(start_end_split[2])
+                end
+             else
+     6          local first_outer_parentheses = s:find("%(")
+     6          local last_outer_parentheses = s:find("%)")
+     6          local expression = s:sub(first_outer_parentheses + 1, last_outer_parentheses - 1)
+     6          local command = s:sub(1, first_outer_parentheses - 1)
+     6          if command == "join" then
+*****0             location.join = true
 
+*****0             if expression:find("%(") then
+*****0                local first_inner_parentheses = expression:find("%(")
+*****0                local parentheses_count = 1
+*****0                local comma = 0
+*****0                local i = 2
+*****0                while (parentheses_count > 0) do
+*****0                   comma = i
+*****0                   if expression:sub(first_inner_parentheses + i) == "(" then parentheses_count = parentheses_count + 1 end
+*****0                   if expression:sub(first_inner_parentheses + i) == ")" then parentheses_count = parentheses_count - 1 end
+*****0                   i = i + 1
+                      end
+*****0                local parse_left_location = parse_location(expression:sub(1, first_inner_parentheses + comma + 1))
+*****0                local parse_right_location = parse_location(expression:sub(2 + first_inner_parentheses + comma, -1))
+*****0                location.sub_locations[#location.sub_locations + 1] = parse_left_location
+*****0                location.sub_locations[#location.sub_locations + 1] = parse_right_location
+                   else
+*****0                for _, number_range in ipairs(split(expression, "[^,]+")) do
+*****0                   local join_location = parse_location(number_range)
+*****0                   location.sub_locations[#location.sub_locations + 1] = join_location
+                      end
+                   end
+                end
 
-    1             if params.attribute_value ~= nil then
-    1                params.feature.attributes[params.attribute] = params.attribute_value
-    1                copied_feature = deepcopy(params.feature)
-    1                params.features[#params.features + 1] = copied_feature
-    1                params.attribute_value = ""
-    1                params.attribute = ""
-    1                params.feature = genbank.Feature
-                  else
-****0                copied_feature = deepcopy(params.feature)
-****0                params.features[#params.features + 1] = copied_feature
-                  end
+     6          if command == "complement" then
+     6             local sub_location = parse_location(expression)
+     6             sub_location.complement = true
+     6             location.sub_locations[#location.sub_locations + 1] = sub_location
+                end
+             end
 
+    27       if s:find("%<") then
+*****0          location.five_prime_partial = true
+             end
+    27       if s:find("%>") then
+*****0          location.three_prime_partial = true
+             end
 
-   22             for _, feature in ipairs(params.features) do
-   21                feature.location = parse_location(feature.gbk_location_string)
-   21                params.genbank.features[#params.genbank.features + 1] = feature
-                  end
-    1             continue = true
-               else
 
-   73             trimmed_line = trim(line)
-   73             if trimmed_line:len() < 1 then
-****0                continue = true
-                  end
-               end
+    27       if location.location_start == 0 and location.location_end and not location.join and not location.complement then
+*****0          location = location.sub_locations[1]
+             end
+    27       return location
+          end
 
-   74          if not continue then
+     1    local ParseParameters = {}
 
-   73             if count_leading_spaces(params.current_line) < count_leading_spaces(params.previous_line) or params.previous_line == "FEATURES" then
 
-   20                if params.attribute_value ~= "" then
-   20                   params.feature.attributes[params.attribute] = params.attribute_value
-   20                   copied_feature = deepcopy(params.feature)
-   20                   params.features[#params.features + 1] = copied_feature
-   20                   params.attribute_value = ""
-   20                   params.attribute = ""
-   20                   params.feature = {}
-   20                   params.feature.attributes = {}
-                     end
 
 
-   20                if params.feature.feature_type ~= nil then
-****0                   copied_feature = deepcopy(params.feature)
-****0                   params.features[#params.features + 1] = copied_feature
-****0                   params.feature = {}
-****0                   params.feature.attributes = {}
-                     end
 
 
-   20                if #split_line < 2 then
-****0                   error("Feature line malformed on line " .. i .. " . Got line: " .. line)
-                     end
-   20                params.feature.feature_type = trim(split_line[1])
-   20                params.feature.gbk_location_string = trim(split_line[#split_line])
-   20                params.multi_line_feature = false
 
-   53             elseif not params.current_line:find("/") then
 
-****0                if not params.current_line:find("\"") and (count_leading_spaces(params.current_line) > count_leading_spaces(params.previous_line) or params.multi_line_feature) then
-****0                   params.feature.gbk_location_string = params.feature.gbk_location_string .. trim(line)
-****0                   params.multi_line_feature = true
-                     else
-****0                   local remove_attribute_value_quotes = trimmed_line:gsub("\"", "")
-****0                   params.attribute_value = params.attribute_value .. remove_attribute_value_quotes
-                     end
-   53             elseif params.current_line:find("/") then
-   53                if params.attribute_value ~= "" then
-   32                   params.feature.attributes[params.attribute] = params.attribute_value
-                     end
-   53                params.attribute_value = ""
-   53                local split_attribute = split(line, "[^=]+")
-   53                local trimmed_space_attribute = trim(split_attribute[1])
-   53                local removed_forward_slash_attribute = trimmed_space_attribute:gsub("/", "")
 
-   53                params.attribute = removed_forward_slash_attribute
-   53                params.attribute_value = split_attribute[2]:gsub("\"", "")
 
-   53                params.multi_line_feature = false
-                  end
-               end
-            end
 
 
-  141       if params.parse_step == "sequence" and not continue then
-   46          if #line < 2 then
-****0             error("Too short line found while parsing genbank sequence on line " .. i .. ". Got line: " .. line)
-   46          elseif line:sub(1, 3) == "//" then
-    1             copied_genbank = deepcopy(params.genbank)
-    1             genbanks[#genbanks + 1] = copied_genbank
-    1             params.genbank_started = false
-    1             params.genbank.sequence = ""
-               else
-   45             params.genbank.sequence = params.genbank.sequence .. line:gsub("[0-9]-[%s+]", "")
-               end
-            end
-  141       continue = false
-  141       i = i + 1
-         end
-    1    return genbanks
-      end
 
-    6 function genbank.feature_sequence(self, parent)
-         local function get_location(location, sequence)
-    1       local seq = ""
-    1       if #location.sub_locations == 0 then
-    1          seq = sequence:sub(location.location_start, location.location_end):upper()
-            else
-****0          for _, sub_location in ipairs(location.sub_locations) do
-****0             seq = seq .. get_location(sub_location, sequence)
-               end
-            end
-    1       if location.complement then
-****0          seq = complement.reverse_complement(seq)
-            end
-    1       return seq
-         end
-    1    return get_location(self.location, parent.sequence)
-      end
 
 
+          local function params_init()
+     2       local params = {}
+     2       params.new_location = true
+     2       params.parse_step = "metadata"
+     2       params.metadata_tag = ""
+     2       params.genbank = genbank.Genbank
+     2       params.genbank_started = false
 
 
+     2       params.attribute_value = ""
+     2       params.feature = genbank.Feature
+     2       params.feature.attributes = {}
+     2       params.features = {}
 
 
+     2       params.genbank = genbank.Genbank
+     2       params.genbank.meta = genbank.Meta
+     2       params.genbank.meta.locus = genbank.Locus
+     2       params.genbank.meta.other = {}
+     2       params.genbank.meta.references = {}
+     2       params.genbank.features = {}
+     2       params.genbank.sequence = ""
+     2       return params
+          end
+     1    local params = params_init()
 
-    6 function genbank.from_json(str)
-****0    return json.decode(str)
-      end
 
-    6 function genbank.to_json(self)
-****0    return json.encode(self)
-      end
+     1    local genbanks = {}
+     1    local copied_feature = {}
+     1    local copied_genbank = {}
+     1    local i = 0
+     1    local continue = false
 
 
+   143    for line in string.gmatch(input, '[^\r\n]+') do
+   282       local split_line = split(trim(line))
 
+   141       local previous_line = params.current_line
+   141       params.current_line = line
+   141       params.previous_line = previous_line
 
 
+   141       if not params.genbank_started then
+     1          if line:find("LOCUS") then
+     2             params = params_init()
+     2             params.genbank.meta.locus = parse_locus(line)
+     1             params.genbank_started = true
+                end
+     1          continue = true
+             end
 
-    6 local codon = {Codon = {}, AminoAcid = {}, CodonTable = {}, }
 
+   141       if params.parse_step == "metadata" and not continue then
 
+    40          if line:len() == 0 then
+*****0             error("Empty metadata line on " .. i)
+                end
 
 
+    40          if line:sub(1, 1) ~= " " or params.metadata_tag == "FEATURES" then
 
+    10             if params.metadata_tag == "DEFINITION" then
+     2                params.genbank.meta.definition = parse_metadata(params.metadata_data)
+     9             elseif params.metadata_tag == "ACCESSION" then
+     2                params.genbank.meta.accession = parse_metadata(params.metadata_data)
+     8             elseif params.metadata_tag == "VERSION" then
+     2                params.genbank.meta.version = parse_metadata(params.metadata_data)
+     7             elseif params.metadata_tag == "KEYWORDS" then
+     2                params.genbank.meta.keywords = parse_metadata(params.metadata_data)
+     6             elseif params.metadata_tag == "SOURCE" then
+     2                params.genbank.meta.source, params.genbank.meta.organism, params.genbank.meta.taxonomy = get_source_organism(params.metadata_data)
+     5             elseif params.metadata_tag == "REFERENCE" then
+     4                params.genbank.meta.references[#params.genbank.meta.references + 1] = parse_references(params.metadata_data)
+     3             elseif params.metadata_tag == "FEATURES" then
+     1                params.parse_step = "features"
 
 
+     2                params.feature.feature_type = trim(split_line[1])
+     2                params.feature.gbk_location_string = trim(split_line[#split_line])
+     1                params.new_location = true
+     1                continue = true
+                   else
+     2                if not continue then
+     2                   if params.metadata_tag ~= "" then
+     2                      params.genbank.meta.other[params.metadata_tag] = parse_metadata(params.metadata_data)
+                         end
+                      end
+                   end
+    10             if not continue then
+    18                params.metadata_tag = trim(split_line[1])
+    36                params.metadata_data = { trim(line:sub(params.metadata_tag:len() + 1)) }
+                   end
+                else
+    10             params.metadata_data[#params.metadata_data + 1] = line
+                end
+             end
 
 
+   141       if params.parse_step == "features" and not continue then
+                local trimmed_line
 
+    74          if line:find("ORIGIN") then
+     1             params.parse_step = "sequence"
 
 
+     1             if params.attribute_value ~= nil then
+     1                params.feature.attributes[params.attribute] = params.attribute_value
+     2                copied_feature = deepcopy(params.feature)
+     1                params.features[#params.features + 1] = copied_feature
+     1                params.attribute_value = ""
+     1                params.attribute = ""
+     1                params.feature = genbank.Feature
+                   else
+*****0                copied_feature = deepcopy(params.feature)
+*****0                params.features[#params.features + 1] = copied_feature
+                   end
 
 
+    23             for _, feature in ipairs(params.features) do
+    42                feature.location = parse_location(feature.gbk_location_string)
+    21                params.genbank.features[#params.genbank.features + 1] = feature
+                   end
+     1             continue = true
+                else
 
+   146             trimmed_line = trim(line)
+   146             if trimmed_line:len() < 1 then
+*****0                continue = true
+                   end
+                end
 
+    74          if not continue then
 
+   219             if count_leading_spaces(params.current_line) < count_leading_spaces(params.previous_line) or params.previous_line == "FEATURES" then
 
+    20                if params.attribute_value ~= "" then
+    20                   params.feature.attributes[params.attribute] = params.attribute_value
+    40                   copied_feature = deepcopy(params.feature)
+    20                   params.features[#params.features + 1] = copied_feature
+    20                   params.attribute_value = ""
+    20                   params.attribute = ""
+    20                   params.feature = {}
+    20                   params.feature.attributes = {}
+                      end
 
 
+    20                if params.feature.feature_type ~= nil then
+*****0                   copied_feature = deepcopy(params.feature)
+*****0                   params.features[#params.features + 1] = copied_feature
+*****0                   params.feature = {}
+*****0                   params.feature.attributes = {}
+                      end
 
 
+    20                if #split_line < 2 then
+*****0                   error("Feature line malformed on line " .. i .. " . Got line: " .. line)
+                      end
+    40                params.feature.feature_type = trim(split_line[1])
+    40                params.feature.gbk_location_string = trim(split_line[#split_line])
+    20                params.multi_line_feature = false
 
+    53             elseif not params.current_line:find("/") then
 
+*****0                if not params.current_line:find("\"") and (count_leading_spaces(params.current_line) > count_leading_spaces(params.previous_line) or params.multi_line_feature) then
+*****0                   params.feature.gbk_location_string = params.feature.gbk_location_string .. trim(line)
+*****0                   params.multi_line_feature = true
+                      else
+*****0                   local remove_attribute_value_quotes = trimmed_line:gsub("\"", "")
+*****0                   params.attribute_value = params.attribute_value .. remove_attribute_value_quotes
+                      end
+    53             elseif params.current_line:find("/") then
+    53                if params.attribute_value ~= "" then
+    32                   params.feature.attributes[params.attribute] = params.attribute_value
+                      end
+    53                params.attribute_value = ""
+    53                local split_attribute = split(line, "[^=]+")
+    53                local trimmed_space_attribute = trim(split_attribute[1])
+    53                local removed_forward_slash_attribute = trimmed_space_attribute:gsub("/", "")
 
+    53                params.attribute = removed_forward_slash_attribute
+    53                params.attribute_value = split_attribute[2]:gsub("\"", "")
 
+    53                params.multi_line_feature = false
+                   end
+                end
+             end
 
 
+   141       if params.parse_step == "sequence" and not continue then
+    46          if #line < 2 then
+*****0             error("Too short line found while parsing genbank sequence on line " .. i .. ". Got line: " .. line)
+    92          elseif line:sub(1, 3) == "//" then
+     2             copied_genbank = deepcopy(params.genbank)
+     1             genbanks[#genbanks + 1] = copied_genbank
+     1             params.genbank_started = false
+     1             params.genbank.sequence = ""
+                else
+    45             params.genbank.sequence = params.genbank.sequence .. line:gsub("[0-9]-[%s+]", "")
+                end
+             end
+   141       continue = false
+   141       i = i + 1
+          end
+     1    return genbanks
+       end
 
+     7 function genbank.feature_sequence(self, parent)
+          local function get_location(location, sequence)
+     1       local seq = ""
+     1       if #location.sub_locations == 0 then
+     3          seq = sequence:sub(location.location_start, location.location_end):upper()
+             else
+*****0          for _, sub_location in ipairs(location.sub_locations) do
+*****0             seq = seq .. get_location(sub_location, sequence)
+                end
+             end
+     1       if location.complement then
+*****0          seq = complement.reverse_complement(seq)
+             end
+     1       return seq
+          end
+     1    return get_location(self.location, parent.sequence)
+       end
 
 
 
@@ -1281,13 +1438,20 @@ build/synbio.lua
 
 
 
+     7 function genbank.from_json(str)
+*****0    return json.decode(str)
+       end
 
+     7 function genbank.to_json(self)
+*****0    return json.encode(self)
+       end
 
 
 
 
 
 
+     7 local codon = {Codon = {}, AminoAcid = {}, CodonTable = {}, }
 
 
 
@@ -1309,33 +1473,6 @@ build/synbio.lua
 
 
 
-    6 codon.CODON_TABLES = {
-    6    [1] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------" },
-    6    [2] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------" },
-    6    [3] = { "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------" },
-    6    [4] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--MM------**-------M------------MMMM---------------M------------" },
-    6    [5] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG", "---M------**--------------------MMMM---------------M------------" },
-    6    [6] = { "FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    6    [9] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
-    6    [10] = { "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
-    6    [11] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M------------MMMM---------------M------------" },
-    6    [12] = { "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
-    6    [13] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG", "---M------**----------------------MM---------------M------------" },
-    6    [14] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "-----------*-----------------------M----------------------------" },
-    6    [16] = { "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------*---*--------------------M----------------------------" },
-    6    [21] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
-    6    [22] = { "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "------*---*---*--------------------M----------------------------" },
-    6    [23] = { "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--*-------**--*-----------------M--M---------------M------------" },
-    6    [24] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M------**-------M---------------M---------------M------------" },
-    6    [25] = { "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**-----------------------M---------------M------------" },
-    6    [26] = { "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
-    6    [27] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    6    [28] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*--------------------M----------------------------" },
-    6    [29] = { "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    6    [30] = { "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
-    6    [31] = { "FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
-    6    [33] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------" },
-    6 }
 
 
 
@@ -1343,45 +1480,15 @@ build/synbio.lua
 
 
 
-    6 function codon.ncbi_standard_to_codon_table(amino_acids, starts)
-****0    local base1 = "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
-****0    local base2 = "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
-****0    local base3 = "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
-****0    local amino_acid_table = {}
-****0    local ct = {}
-****0    ct.start_codons = {}
-****0    for i = 1, #amino_acids do
-****0       local triplet = base1:sub(i, i) .. base2:sub(i, i) .. base3:sub(i, i)
 
-****0       if starts:sub(i, i) == "M" then
-               local start_codon
-****0          start_codon = { triplet = triplet, weight = 0 }
-****0          ct.start_codons[#ct.start_codons + 1] = start_codon
-            end
 
-****0       local amino_acid = amino_acids:sub(i, i)
-****0       if amino_acid_table[amino_acid] == nil then
-****0          amino_acid_table[amino_acid] = { { triplet = triplet, weight = 0 } }
-            else
-****0          amino_acid_table[amino_acid][#amino_acid_table[amino_acid] + 1] = { triplet = triplet, weight = 0 }
-            end
-         end
 
 
-****0    ct.amino_acids = {}
-****0    for amino_acid, codons in pairs(amino_acid_table) do
-****0       ct.amino_acids[#ct.amino_acids + 1] = { letter = amino_acid, codons = codons }
-         end
-****0    return ct
-      end
 
 
 
 
 
-    6 function codon.new_table(table_number)
-****0    return codon.ncbi_standard_to_codon_table(codon.CODON_TABLES[table_number][1], codon.CODON_TABLES[table_number][2])
-      end
 
 
 
@@ -1409,31 +1516,133 @@ build/synbio.lua
 
 
 
+     7 codon.CODON_TABLES = {
+     7    [1] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M---------------M----------------------------" },
+     7    [2] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "----------**--------------------MMMM----------**---M------------" },
+     7    [3] = { "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**----------------------MM---------------M------------" },
+     7    [4] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--MM------**-------M------------MMMM---------------M------------" },
+     7    [5] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG", "---M------**--------------------MMMM---------------M------------" },
+     7    [6] = { "FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+     7    [9] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
+     7    [10] = { "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
+     7    [11] = { "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**--*----M------------MMMM---------------M------------" },
+     7    [12] = { "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
+     7    [13] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG", "---M------**----------------------MM---------------M------------" },
+     7    [14] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "-----------*-----------------------M----------------------------" },
+     7    [16] = { "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------*---*--------------------M----------------------------" },
+     7    [21] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "----------**-----------------------M---------------M------------" },
+     7    [22] = { "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "------*---*---*--------------------M----------------------------" },
+     7    [23] = { "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--*-------**--*-----------------M--M---------------M------------" },
+     7    [24] = { "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M------**-------M---------------M---------------M------------" },
+     7    [25] = { "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "---M------**-----------------------M---------------M------------" },
+     7    [26] = { "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*----M---------------M----------------------------" },
+     7    [27] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+     7    [28] = { "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**--*--------------------M----------------------------" },
+     7    [29] = { "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+     7    [30] = { "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "--------------*--------------------M----------------------------" },
+     7    [31] = { "FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "----------**-----------------------M----------------------------" },
+     7    [33] = { "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "---M-------*-------M---------------M---------------M------------" },
+     7 }
 
 
 
 
-    6 local synbio = {}
 
 
 
+     7 function codon.ncbi_standard_to_codon_table(amino_acids, starts)
+*****0    local base1 = "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG"
+*****0    local base2 = "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG"
+*****0    local base3 = "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG"
+*****0    local amino_acid_table = {}
+*****0    local ct = {}
+*****0    ct.start_codons = {}
+*****0    for i = 1, #amino_acids do
+*****0       local triplet = base1:sub(i, i) .. base2:sub(i, i) .. base3:sub(i, i)
 
+*****0       if starts:sub(i, i) == "M" then
+                local start_codon
+*****0          start_codon = { triplet = triplet, weight = 0 }
+*****0          ct.start_codons[#ct.start_codons + 1] = start_codon
+             end
 
+*****0       local amino_acid = amino_acids:sub(i, i)
+*****0       if amino_acid_table[amino_acid] == nil then
+*****0          amino_acid_table[amino_acid] = { { triplet = triplet, weight = 0 } }
+             else
+*****0          amino_acid_table[amino_acid][#amino_acid_table[amino_acid] + 1] = { triplet = triplet, weight = 0 }
+             end
+          end
 
 
+*****0    ct.amino_acids = {}
+*****0    for amino_acid, codons in pairs(amino_acid_table) do
+*****0       ct.amino_acids[#ct.amino_acids + 1] = { letter = amino_acid, codons = codons }
+          end
+*****0    return ct
+       end
 
 
 
-    6 synbio.version = "0.0.1"
-    6 synbio.complement = complement
-    6 synbio.fasta = fasta
-    6 synbio.fastq = fastq
-    6 synbio.primers = primers
-    6 synbio.genbank = genbank
-    6 synbio.codon = codon
-    6 synbio.json = json
 
-    6 return synbio
+
+     7 function codon.new_table(table_number)
+*****0    return codon.ncbi_standard_to_codon_table(codon.CODON_TABLES[table_number][1], codon.CODON_TABLES[table_number][2])
+       end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     7 local synbio = {}
+
+
+
+
+
+
+
+
+
+
+
+     7 synbio.version = "0.0.1"
+     7 synbio.complement = complement
+     7 synbio.fasta = fasta
+     7 synbio.fastq = fastq
+     7 synbio.primers = primers
+     7 synbio.pcr = pcr
+     7 synbio.genbank = genbank
+     7 synbio.codon = codon
+     7 synbio.json = json
+
+     7 return synbio
 
 ==============================================================================
 Summary
@@ -1441,6 +1650,6 @@ Summary
 
 File             Hits Missed Coverage
 -------------------------------------
-build/synbio.lua 622  88     87.61%
+build/synbio.lua 692  86     88.95%
 -------------------------------------
-Total            622  88     87.61%
+Total            692  86     88.95%
