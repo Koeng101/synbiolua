@@ -1,5 +1,4 @@
-local synbio = require("build.synbio")
-local genbank = synbio.genbank
+local genbank = require("build.genbank")
 
 local puc19_file = io.open("spec/data/puc19.gbk", "rb")
 local puc19 = puc19_file:read("*a")
