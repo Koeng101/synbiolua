@@ -1,5 +1,4 @@
-local synbio = require("build.synbio")
-local json = synbio.json
+local json = require("build.json")
 
 local fmt = string.format
 

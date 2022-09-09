@@ -1,5 +1,4 @@
-local synbio = require("build.synbio")
-local fastq = synbio.fastq
+local fastq = require("build.fastq")
 
 local test_case = [[@SEQ_ID
 GATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT

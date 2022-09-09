@@ -10,6 +10,7 @@ local primers = require("primers")
 local pcr = require("pcr")
 local genbank = require("genbank")
 local codon = require("codon")
+local fragment = require("fragment")
 local json = require("json")
 
 local record synbio
@@ -21,6 +22,7 @@ local record synbio
     pcr: pcr
     genbank: genbank
     codon: codon
+    fragment: fragment
     json: json
 end
 
@@ -32,6 +34,7 @@ synbio.primers = primers
 synbio.pcr = pcr
 synbio.genbank = genbank
 synbio.codon = codon
+synbio.fragment = fragment
 synbio.json = json
 
 return synbio

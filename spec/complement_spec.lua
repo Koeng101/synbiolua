@@ -1,5 +1,4 @@
-local synbio = require("build.synbio")
-local complement = synbio.complement
+local complement = require("build.complement")
 
 describe("complement", function()
 	it("should reverse a string", function()
